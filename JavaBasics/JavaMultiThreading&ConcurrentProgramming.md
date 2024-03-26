@@ -2,7 +2,7 @@
 >java多线程&并发  
 
 **Java并发知识库（来自Java核心面试知识整理）**
-![java](https://github.com/xionghaotian525/JavaLearningRoadMap/blob/main/Res/images/并发编程知识库.png)  
+![java](../Res/images/并发编程知识库.png)  
 
 ## 目录
 - [chatGPT总结](#chatgpt总结)
