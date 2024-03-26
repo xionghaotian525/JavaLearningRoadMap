@@ -126,8 +126,8 @@
 10. ###### 图片
 > 语法：\!\[图片alt]\(图片链接 "title")    
 
-![alt text](\Res\images\集合接口继承关系和实现.png "title")
-![alt text](\Res\images\并发编程知识库.png "title")
+![alt text](/Res/images/集合接口继承关系和实现.png "title")
+![alt text](/Res/images/并发编程知识库.png "title")
 
 11. ###### 表格
 > - 可以使用表格的HTML字符代码（\&#124;）在表中显示竖线（|）字符。在（|）字符之前添加转义（\\）也可以
