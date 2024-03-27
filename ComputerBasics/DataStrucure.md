@@ -56,7 +56,7 @@
 
 11. **子树（Subtree）：** 以某个节点为根节点的所有节点和边构成的树。
 
-12. **遍历（Traversal）：** 访问树中所有节点的过程。常见的遍历方式包括**前序遍历**（pre-order）、**中序遍历**（in-order）、**后序遍历**（post-order）和**层序遍历**（level-order）等。
+12. **遍历（Traversal）：** 访问树中所有节点的过程。常见的遍历方式包括**前序遍历**（pre-order）、**中序遍历**（in-order）、**后序遍历**（post-order）和**层序遍历**（level-order）等。（补充：BFS（层序遍历），DFS，归属于图遍历算法）。
 
 ![树的基本概念](/Res/images/树的基本概念.png "树的基本概念")
 
@@ -82,7 +82,7 @@
    ![](/Res/images/树的中序遍历.png) 
    5. 后序遍历
    ![](/Res/images/树的后序遍历.png) 
-   7. 层序遍历
+   7. 层序遍历(广度优先搜索BFS)
    ![](/Res/images/树的层次遍历.png) 
 
 
@@ -200,7 +200,7 @@
         }
     }
    ``` 
-   3. 中序遍历
+   2. 中序遍历
    ```java
     //递归方法
     public void inOrder(TreeNode root) {
@@ -231,7 +231,7 @@
         }
     }
    ``` 
-   5. 后序遍历
+   3. 后序遍历
    ```java
     //递归方法
     public void postOrder(TreeNode root) {
@@ -242,7 +242,7 @@
     }
     //非递归方法实现
    ```  
-   7. 层序遍历
+   4. 层序遍历
    ```java
     public void levelOrder(TreeNode root) {
         Queue<TreeNode> queue = new LinkedList<>();
