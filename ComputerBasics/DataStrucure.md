@@ -68,6 +68,7 @@
 4. 具有$n$个结点的$m$次树的最小高度为$\lceil \log_m{(n(m-1)+1)} \rceil$
 
     - 注：$\lceil x \rceil$表示大于等于x的最小整数。
+    - 通常用符号 \(\lfloor x \rfloor\) 表示小于等于 \(x\) 的最大整数。
 
 **树的存储结构&实现**
 
@@ -150,9 +151,17 @@ class Tree {
 
 **二叉树的性质**
 
+1. 非空二叉树上的叶子结点数等于**双分支结点数**+1
+2. 非空二叉树的第$i$层上最多有个$2^{i-1}$个节点$(i\geq1)$
+3. 高度为$h$的二叉树最多有$2^h-1$个结点$(h\geq1)$
+4. 完全二叉树中层序编号为$i$的结点$(1 \leq i \leq n,n\geq1,n为节点数)$有以下性质
+   1. 若$i\leq \lfloor n/2 \rfloor$,即$2i\leq n$,则编号为$i$的结点为分支结点，否则为叶子结点。
+   2. 若$n$为奇数，则每个分支结点都既有左孩子结点，又有右孩子结点；若$n$为偶数，则编号最大的分支结点(编号为$\lfloor n/2 \rfloor$)只有左孩子结点，没有右孩子结点，其余结点都有左孩子结点和右孩子结点。
+   3. 若编号为$i$的结点有左孩子结点，则左孩子结点的编号为$2i$；若编号为$i$的结点有右孩子结点，则右孩子结点的编号为$2i+1$。
+   4. 除根节点以外，若一个结点的编号为$i$，则它的双亲结点的编号为$\lfloor i/2 \rfloor$。
+5. 具有n个$(n>0)$结点的完全二叉树的高度为$\lfloor log_2(n+1) \rfloor$或$\lfloor log_2n \rfloor+1$
+
 **特殊的二叉树**
-
-
 
 1. **满二叉树（Full Binary Tree）**：
    - 满二叉树是一种特殊的二叉树，其中每个节点要么是叶子节点，要么具有两个子节点。
@@ -170,12 +179,144 @@ class Tree {
 3. **二叉搜索树（Binary Search Tree，BST）**：
    - 二叉搜索树是一种特殊的二叉树，其中每个节点的值大于其左子树中的所有节点的值，且小于其右子树中的所有节点的值。
    - 由于其特定的结构，二叉搜索树支持高效的插入、删除和查找操作。
-   - 基本操作
+   - 基本操作-查找
+![](/Res/images/二叉搜索树-查找.png)
+    
+    > 思路：
+    > 如果根节点不为空
+    >看根节点的值是否等于value,等于返回true
+    >根节点的值>value，继续在根节点左子树查找
+    >根节点的值<value，继续在根节点右子树查找
+
+    ```java
+        //查找
+        public TreeNode serach(int val){
+                TreeNode cur = root;
+                while(cur != null){
+                    if(cur.val > val){
+                        cur = cur.left;
+                    } else if (cur.val < val) {
+                        cur = cur.right;
+                    }
+                    else{
+                        return cur;
+                    }
+                }
+                return null;
+            }
+    ```
+   - 基本操作-插入
+![](/Res/images/二叉搜索树-插入.png)
+
+    > 思路：
+    > 如果要插入的节点为空，root == null，直接插入，返回true
+    >定义一个parent和cur，从root开始查找，当cur为空时，找到要插入的位置，即parent的下一个节点
+
+    ```java
+        //插入
+        public boolean insert(int key){
+        if(root == null){
+            TreeNode root = new TreeNode(key);
+            return true;
+        }
+        TreeNode parent = null;
+        TreeNode cur = root;
+        while(cur != null){
+            if(cur.val > key){
+                parent = cur;
+                cur = cur.left;
+            } else if (cur.val < key) {
+                parent = cur;
+                cur = cur.right;
+            }
+            else{
+                return false;
+            }
+        }
+        TreeNode node = new TreeNode(key);
+        if(parent.val < key){
+            parent.right = node;
+        }
+        else{
+            parent.left = node;
+        }
+        return true;
+    }
+    ```
+   - 基本操作-删除
+    >思路：
+    > 1. 删除叶子节点：如果要删除的节点是叶子节点（即没有子节点），直接删除即可。
+    > 2. 删除只有一个子节点的节点：如果要删除的节点只有一个子节点，将该节点的父节点指向该节点的子节点即可。
+    > 3. 删除有两个子节点的节点：如果要删除的节点有两个子节点，可以选择以下两种策略之一： 
+    >    - 找到该节点右子树中的最小节点（或左子树中的最大节点），将其值复制到要删除的节点上，然后递归删除右子树中的最小节点（或左子树中的最大节点）。
+    >    - 找到该节点左子树中的最大节点（或右子树中的最小节点），将其值复制到要删除的节点上，然后递归删除左子树中的最大节点（或右子树中的最小节点）。
+
+    ```java
+    class TreeNode {
+        int val;        // 节点值
+        TreeNode left, right;   // 左右子节点
+        public TreeNode(int val) {
+            this.val = val;
+            left = right = null;
+        }
+    }
+    class BST {
+        TreeNode root;  // 根节点
+        // 删除节点
+        public TreeNode deleteNode(TreeNode root, int key) {
+            if (root == null) return root;  // 若根节点为空，直接返回
+
+            // 在左子树中删除
+            if (key < root.val) {
+                root.left = deleteNode(root.left, key);
+            } 
+            // 在右子树中删除
+            else if (key > root.val) {
+                root.right = deleteNode(root.right, key);
+            } 
+            // 找到要删除的节点
+            else {
+                // 如果左子树为空，直接返回右子树
+                if (root.left == null) return root.right;
+                // 如果右子树为空，直接返回左子树
+                else if (root.right == null) return root.left;
+                // 如果左右子树均不为空，找到右子树中的最小节点
+                root.val = findMin(root.right).val;
+                // 在右子树中递归删除最小节点
+                root.right = deleteNode(root.right, root.val);
+            }
+            return root;
+        }
+        // 找到以node为根节点的子树中的最小节点
+        private TreeNode findMin(TreeNode node) {
+            while (node.left != null) {
+                node = node.left;
+            }
+            return node;
+        }
+    }
+    ```
 
 4. **线索二叉树（Threaded Binary Tree）**：
    - 线索二叉树是对普通二叉树进行改进，以便在遍历树时提供更快的访问。
    - 在线索二叉树中，除了左子节点和右子节点之外，每个节点还有一个指向中序遍历下的前驱节点和后继节点的指针。
    - 线索化可以使得中序遍历的过程中，无需使用递归或栈来实现。
+![](/Res/images/线索二叉树1.png)
+![](/Res/images/线索二叉树2.png)
+   - 线索二叉树的基本操作
+    线索二叉树是对普通二叉树的一种改进，它通过添加额外的指针，使得遍历操作更加高效。主要的基本操作包括：
+
+     1. 线索化：线索化是将普通二叉树转化为线索二叉树的过程。在线索化过程中，**将原本为空的指针指向前驱节点或后继节点**，以方便后续的遍历操作。
+
+     2. 中序线索化：中序线索化是指在中序遍历的基础上线索化二叉树。对于每个节点，将其左子树的最右节点（前驱节点）和右子树的最左节点（后继节点）进行连接。
+
+     3. 中序遍历：中序遍历是线索二叉树中最常用的遍历方式，可以按照节点的大小顺序输出所有节点的值。由于线索化的存在，中序遍历不再需要递归或者使用栈，因此效率更高。
+
+     4. 先序遍历、后序遍历：除了中序遍历外，线索二叉树也可以进行先序遍历和后序遍历。先序遍历顺序是根节点、左子树、右子树，后序遍历顺序是左子树、右子树、根节点。
+
+     5. 查找：线索二叉树的查找操作与普通二叉树相同，可以根据节点的值进行查找，也可以根据遍历顺序进行查找。
+
+     6. 插入和删除：线索二叉树的插入和删除操作与普通二叉树类似，但需要保持线索的正确性。在插入和删除节点时，需要更新线索指针，以保证线索二叉树的线索化状态不变。  
 
 这些二叉树结构在计算机科学中都有着重要的应用，满二叉树和完全二叉树通常用于算法分析，而二叉搜索树和线索二叉树则用于提供高效的数据操作。
 
@@ -367,7 +508,6 @@ public class TreeNode {
  
     }
    ``` 
-
 ### 平衡查找树
 #### 平衡二叉树
 ##### AVL
