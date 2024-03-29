@@ -2,8 +2,9 @@
 >java多线程&并发  
 
 ## 目录
+[toc]
 
-- [一、Gemini总结参考](#一gemini总结参考)
+<!-- - [一、Gemini总结参考](#一gemini总结参考)
   - [基础概念](#基础概念)
   - [线程安全](#线程安全)
   - [线程间通信](#线程间通信)
@@ -24,7 +25,7 @@
   - []()
   - []()
 - [三、八股问题整理](#三八股问题整理) 
-	- [(1)Java中实现线程的方法](#1java中实现线程的方法)
+	- [(1)Java中实现线程的方法](#1java中实现线程的方法) -->
 
 ## 一、Gemini总结参考
 
@@ -480,14 +481,286 @@ Java提供了一些工具可以帮助我们调试和分析多线程程序，例�
 10. **理解并发编程的挑战**：
     - 并发编程具有一定的复杂性和挑战性，需要深入理解并发原理和各种并发机制，以及它们在实际应用中的使用。
 
-## 四、个人笔记
+## 三、个人笔记
 
-## 三、八股问题整理
+### 1. 线程基础
+1. **线程的基本概念**
+   - 线程是程序执行流的最小单元，是操作系统能够进行调度的基本单位。一个进程可以包含一个或多个线程。
+   - 特点：并发性、独立性、共享性
+2. **线程、进程和程序**
+   - 程序是一组指令的集合，它是静态的，存储在磁盘上。程序本身不能执行，需要被加载到内存中才能运行。
+   - 进程是程序的一次执行过程，它是动态的，拥有自己的内存空间、资源和状态。一个程序可以对应多个进程。
+   - 线程是进程中的执行单元，它共享进程的内存空间和资源，但拥有自己的状态。一个进程可以包含多个线程。
+
+| 特征 | 程序 | 进程 | 线程 |
+|---|---|---|---|
+| 定义 | 指令集合 | 程序的一次执行过程 | 进程中的执行单元 |
+| 动态性 | 静态 | 动态 | 动态 |
+| 资源 | 无 | 独立的内存空间和资源 | 共享进程的内存空间和资源 |
+| 状态 | 无 | 独立的状态 | 独立的状态 |
+| 数量 | 一个程序可以对应多个进程 | 一个进程可以包含多个线程 |
+3. **java线程创建（实现）方式**
+   - 继承Thread类
+
+   ```java
+   public class MyThread extends Thread { 
+      public void run() { 
+         System.out.println("MyThread.run()"); 
+      } 
+   } 
+   MyThread myThread1 = new MyThread(); 
+   myThread1.start();
+   ```
+   - 实现Runnable接口
+
+   ```java
+   //如果自己的类已经 extends 另一个类，就无法直接 extends Thread，此时，可以实现一个Runnable 接口
+   public class MyThread extends OtherClass implements Runnable { 
+      public void run() { 
+         System.out.println("MyThread.run()"); 
+      } 
+   } 
+   //启动 MyThread，需要首先实例化一个 Thread，并传入自己的 MyThread 实例：
+   MyThread myThread = new MyThread(); 
+   Thread thread = new Thread(myThread); 
+   thread.start(); 
+   //事实上，当传入一个 Runnable target 参数给 Thread 后，Thread 的 run()方法就会调用
+   target.run()
+   public void run() { 
+      if (target != null) { 
+         target.run(); 
+      } 
+   }
+   ```
+   - 实现Callable接口
+
+   有返回值的任务必须实现 Callable 接口，类似的，无返回值的任务必须 Runnable 接口。执行Callable 任务后，可以获取一个 Future 的对象，在该对象上调用 get 就可以获取到 Callable 任务返回的 Object 了，再结合线程池接口 ExecutorService 就可以实现传说中**有返回结果的多线程**了。
+   ```java
+   //创建一个线程池
+   ExecutorService pool = Executors.newFixedThreadPool(taskSize);
+   // 创建多个有返回值的任务
+   List<Future> list = new ArrayList<Future>(); 
+   for (int i = 0; i < taskSize; i++) { 
+      Callable c = new MyCallable(i + " "); 
+      // 执行任务并获取 Future 对象
+      Future f = pool.submit(c); 
+      list.add(f); 
+   } 
+   // 关闭线程池
+   pool.shutdown(); 
+   // 获取所有并发任务的运行结果
+   for (Future f : list) { 
+      // 从 Future 对象上获取任务的返回值，并输出到控制台
+      System.out.println("res：" + f.get().toString()); 
+   }
+   ```
+   - 线程池方式创建
+
+   线程和数据库连接这些资源都是非常宝贵的资源。那么每次需要的时候创建，不需要的时候销毁，是非常浪费资源的。那么我们就可以使用缓存的策略，也就是使用线程池。
+   ```java
+   // 创建线程池
+   ExecutorService threadPool = Executors.newFixedThreadPool(10);
+   while(true) {
+   threadPool.execute(new Runnable() { // 提交多个线程任务，并执行
+      @Override
+      public void run() {
+            System.out.println(Thread.currentThread().getName() + " is running ..");
+            try {
+               Thread.sleep(3000);
+            } catch (InterruptedException e) {
+               e.printStackTrace();
+            }
+         }
+      });
+   }
+   
+   ```
+4. **线程状态**
+   新建（New）、就绪（Runnable）、运行（Running）、阻塞（Blocked）、等待（Waiting）、超时等待（Timed_Waiting）和终止（Terminated）。
+   ![线程状态](/Res/images/life-cycle-of-a-thread.png "线程状态")
+   ![线程状态转变](/Res/images/thread-life-cycle.png "状态转变")
+5. **线程控制**
+![](/Res/images/线程状态变迁（图源《java并发编程艺术》）.png)   
+   - 线程调度
+     - yield
+     - join
+     - priority
+   - 等待/通知
+     - wait
+     - notify
+     - notifyAll
+   - 中断机制
+     - interrupt方法
+     - InterruptedException
+### 2. 线程池
+   - Executor 框架：提供线程池管理的高级接口和类（如 `ExecutorService`，ScheduledExecutorService）。
+   - `FixedThreadPool`:
+
+   **创建一个可重用固定线程数的线程池，以共享的无界队列方式来运行这些线程**。在任意点，在大多数 nThreads 线程会处于处理任务的活动状态。如果在所有线程处于活动状态时提交附加任务，则在有可用线程之前，附加任务将在队列中等待。如果在关闭前的执行期间由于失败而导致任何线程终止，那么一个新线程将代替它执行后续的任务（如果需要）。在某个线程被显式地关闭之前，池中的线程将一直存在。
+   - `CachedThreadPool`:
+
+   创建一个可根据需要创建新线程的线程池，但是在以前构造的线程可用时将重用它们。对于执行很多短期异步任务的程序而言，这些线程池通常可提高程序性能。**调用 execute 将重用以前构造的线程（如果线程可用）。如果现有线程没有可用的，则创建一个新线程并添加到池中。终止并从缓存中移除那些已有 60 秒钟未被使用的线程**。因此，长时间保持空闲的线程池不会使用任何资源。
+   - `ScheduledThreadPool`: 
+
+   创建一个线程池，它可安排在给定延迟后运行命令或者定期地执行。
+   ```java
+   ScheduledExecutorService scheduledThreadPool= Executors.newScheduledThreadPool(3); 
+   scheduledThreadPool.schedule(newRunnable(){ 
+      @Override 
+      public void run() {
+         System.out.println("延迟三秒");
+      }
+   }, 3, TimeUnit.SECONDS);
+   scheduledThreadPool.scheduleAtFixedRate(newRunnable(){ 
+      @Override 
+      public void run() {
+         System.out.println("延迟 1 秒后每三秒执行一次");
+      }
+   },1,3,TimeUnit.SECONDS);
+   ```
+   - `SingleThreadExecutor`:
+
+Executors.newSingleThreadExecutor()返回一个线程池（这个线程池只有一个线程）,这个线程池可以在线程死后（或发生异常时）重新启动一个线程来替代原来的线程继续执行下去！
+   - ThreadPoolExecutor：可高度定制的线程池实现。
+### 3. 并发工具类
+   - **synchronized 关键字：** 方法锁和对象锁，控制同步访问。
+
+在Java中，`synchronized`是一个关键字，用于实现线程间的同步，确保多个线程对共享资源的安全访问。`synchronized`可以用来修饰方法或代码块，以下是关于`synchronized`关键字的一些重要概念：
+
+1. 方法级别的同步：
+   - 在Java中，可以使用`synchronized`关键字修饰方法，以实现方法级别的同步。当一个线程进入被`synchronized`修饰的方法时，会自动获取该方法所属对象的锁，其他线程则需要等待锁的释放才能进入该方法。
+   - 方法级别的同步适用于整个方法需要同步的情况，但可能会导致性能下降，因为其他线程在等待锁时会被阻塞。
+
+2. 代码块级别的同步：
+   - 除了修饰整个方法，`synchronized`还可以用于代码块级别的同步。通过`synchronized`关键字后跟括号中的锁对象来指定需要同步的对象。
+   - 使用代码块级别的同步可以避免方法级别同步的性能问题，只对需要同步的部分代码进行同步。
+
+3. 对象锁：
+   - 在Java中，每个对象都有一个关联的锁，称为对象锁。当一个线程进入`synchronized`修饰的方法或代码块时，会尝试获取该对象的锁。
+   - 当一个线程获取了对象锁后，其他线程需要等待该锁的释放才能进入被`synchronized`修饰的方法或代码块。
+
+4. 类锁：
+   - 在Java中，每个类也有一个关联的锁，称为类锁。类锁是由`synchronized`修饰的静态方法或静态代码块所持有的锁。
+   - 类锁可以确保对于整个类的静态成员的访问是线程安全的。
+
+5. 重入性：
+   - Java中的`synchronized`关键字是可重入的，一个线程可以多次获取同一个对象的锁，而不会发生死锁。这种机制称为重入性。
+
+`synchronized`关键字是Java中实现同步的重要机制，可以确保多个线程对共享资源的安全访问。然而，在一些高并发情况下，`synchronized`的性能可能不如其他同步机制，如`Lock`接口和`java.util.concurrent`包提供的并发工具类。
+   - **volatile 关键字：** 保证变量的可见性，避免指令重排序。
+
+`volatile`是Java中的一个关键字，用于声明变量，确保多个线程之间对变量的可见性，即当一个线程修改了被`volatile`修饰的变量的值时，其他线程能够立即看到最新的值。以下是`volatile`关键字的一些重要特点和用法：
+
+1. 可见性：
+   - 使用`volatile`修饰的变量可以保证对其他线程的可见性，即当一个线程修改了该变量的值后，其他线程能够立即看到最新的值。
+   - 这是因为`volatile`变量的值会被立即刷新到主内存中，并且当一个线程读取`volatile`变量时，会直接从主内存中获取最新的值，而不是从线程的本地缓存中读取。
+
+2. 禁止指令重排序：
+   - 使用`volatile`修饰的变量会禁止指令重排序，确保了程序的执行顺序与代码的顺序一致。
+   - 这对于一些特定的并发场景非常重要，例如双重检查锁定模式（Double-Checked Locking）中的变量使用`volatile`修饰，可以确保线程安全地获取单例对象。
+
+3. 不保证原子性：
+   - 虽然`volatile`可以确保对变量的读取和写入操作的可见性，但并不保证对变量的复合操作的原子性。
+   - 如果一个变量的操作需要保证原子性，例如增加或减少一个计数器的值，就需要使用`synchronized`关键字或`java.util.concurrent.atomic`包中的原子类来实现。
+
+4. 适用场景：
+   - `volatile`适用于状态标志位等在多线程中需要共享的变量，但不适用于需要原子性操作的场景。
+   - 例如，当一个线程修改了一个标志位表示任务已经完成时，其他线程可以通过读取`volatile`变量来感知到这个状态的变化，从而做出相应的处理。
+
+总的来说，`volatile`关键字用于确保多个线程之间对变量的可见性，禁止指令重排序，适用于一些状态标志位等需要共享的场景，但并不保证对变量的复合操作的原子性。
+   - **Lock 接口：** ReentrantLock 等具体实现提供比 synchronized 更灵活的锁操作。
+
+`Lock`接口是Java并发包中用于实现锁的一种方式，相比于`synchronized`关键字，它提供了更灵活的锁定和解锁机制。以下是关于`Lock`接口的一些重要特点和用法：
+
+1. 灵活性：
+   - `Lock`接口提供了比`synchronized`更灵活的锁定和解锁机制。它允许使用者手动地获取和释放锁，可以在需要时选择性地获取锁、尝试获取锁、定时获取锁等。
+
+2. 条件变量：
+   - `Lock`接口提供了支持条件变量（Condition）的能力。条件变量允许线程以分组的方式等待特定的条件发生，从而更灵活地控制线程的等待和唤醒。
+
+3. 可中断性：
+   - 与`synchronized`关键字不同，`Lock`接口提供了可中断的锁定操作。即当一个线程等待获取锁时，另一个线程可以通过中断该线程来取消等待，并抛出`InterruptedException`异常。
+
+4. 公平性：
+   - `Lock`接口提供了对于锁的公平性设置。在公平模式下，锁将按照请求的顺序分配给等待线程；而在非公平模式下，锁将不保证分配给等待线程的顺序。
+
+5. 替代性：
+   - `Lock`接口提供了`synchronized`关键字的替代方案，可以用于实现同步代码块和同步方法的功能。它提供了与`synchronized`关键字类似的功能，但更加灵活和强大。
+
+6. 具体实现：
+   - Java并发包中提供了多个具体实现了`Lock`接口的类，包括`ReentrantLock`、`ReentrantReadWriteLock.ReadLock`、`ReentrantReadWriteLock.WriteLock`等，分别用于提供可重入锁、读写锁等不同的锁定机制。
+
+总的来说，`Lock`接口是Java并发包中用于实现锁的一种方式，提供了比`synchronized`更灵活和强大的锁定和解锁机制，支持条件变量、可中断性、公平性等特性。在需要更多控制和灵活性的并发编程场景中，`Lock`接口是一个非常有用的工具。
+   - **Atomic 包：** 利用 CAS 操作实现无锁的线程安全编程（如 AtomicInteger）。
+
+`java.util.concurrent.atomic`包提供了一组原子操作类，用于在多线程环境下对变量进行原子操作，保证了操作的线程安全性。以下是关于`java.util.concurrent.atomic`包的一些重要内容：
+
+1. 原子操作类：
+   - `java.util.concurrent.atomic`包提供了一系列原子操作类，包括`AtomicBoolean`、`AtomicInteger`、`AtomicLong`等，分别用于对布尔值、整型、长整型等数据类型的原子操作。
+   - 这些原子操作类提供了一系列的原子性操作方法，如`get()`、`set()`、`compareAndSet()`等，确保对变量的操作在单个方法调用中完成，并且保证了操作的原子性。
+
+2. 原子更新字段类：
+   - 除了基本类型的原子操作类，`java.util.concurrent.atomic`包还提供了一系列原子更新字段类，如`AtomicIntegerFieldUpdater`、`AtomicLongFieldUpdater`等，用于原子地更新对象的字段值。
+   - 这些原子更新字段类可以用于更新对象中的整型、长整型等字段的值，并提供了一系列的原子更新方法，如`compareAndSet()`、`getAndIncrement()`等。
+
+3. 原子数组类：
+   - `java.util.concurrent.atomic`包还提供了一系列原子数组类，如`AtomicIntegerArray`、`AtomicLongArray`等，用于原子操作数组中的元素。
+   - 这些原子数组类提供了一系列的原子操作方法，如`get()`、`set()`、`getAndIncrement()`等，确保对数组元素的操作在单个方法调用中完成，并且保证了操作的原子性。
+
+4. 适用性：
+   - `java.util.concurrent.atomic`包中的原子操作类适用于高并发环境下对共享变量进行原子操作的场景。它们提供了一种高效、线程安全的方式来更新变量的值，避免了使用`synchronized`关键字等锁机制带来的性能开销。
+
+5. 注意事项：
+   - 虽然`java.util.concurrent.atomic`包提供了原子操作类，但并不是所有的情况都适合使用原子操作类。在某些需要多个操作组合而成的情况下，可能需要考虑使用锁机制来确保操作的原子性。
+
+总的来说，`java.util.concurrent.atomic`包提供了一组原子操作类，用于在多线程环境下对变量进行原子操作，保证了操作的线程安全性，并且提供了一种高效、简单的方式来实现线程安全的变量更新操作。
+### 4. 并发工具
+   - CountDownLatch：允许一个或多个线程等待一系列事件发生。
+   - CyclicBarrier：使一定数量的线程到达一个同步点后再一起继续执行。
+   - Semaphore：控制同时访问某个资源或操作的线程数量。
+   - Exchanger：两个线程在同一点交换数据的同步点。
+   - 其它：
+     - Fork/Join 框架：用于大任务分解成小任务并行执行，然后合并结果的框架。
+     - BlockingQueue：用于生产者消费者模式的阻塞队列接口。
+### 5. 并发集合
+   - Concurrent 包：提供线程安全的集合类，如 **`ConcurrentHashMap`**、`CopyOnWriteArrayList`。
+   ![](/Res/images/concurrent包.png)
+
+### 6. 并发编程最佳实践
+
+   - 避免共享状态：尽可能使线程不共享状态或者数据。
+   - 最小同步策略：尽量减小同步代码块的范围，避免死锁等问题。
+   - 不可变对象：使用不可变对象来避免同步问题。
+
+## 四、八股问题整理
 
 ### (1).Java中实现线程的方法
+
+1. 继承Thread类
+2. 实现Runnable接口
+3. 实现Callable接口
+4. 利用线程池方式创建
+
 ### (2).如何停止一个正在运行的线程  
-### (3).notify和notifyAll有什么区别  
+
+1. 使用退出标志，使线程正常退出，也就是当run方法完成后线程终止。
+2. 使用stop方法强行终止，但是不推荐这个方法，因为stop和suspend及resume一样都是过期作废的方法。
+3. 使用interrupt方法中断线程。
+
+### (3).notify和notifyAll有什么区别
+
+1. notify可能会导致死锁，而notifyAll则不会
+任何时候只有一个线程可以获得锁，也就是说只有一个线程可以运行synchronized 中的代码
+2. 使用notifyall,可以唤醒 所有处于wait状态的线程，使其重新进入锁的争夺队列中，而notify只能唤醒一个。
+3. wait() 应配合while循环使用，不应使用if，务必在wait()调用前后都检查条件，如果不满足，必须调用notify()唤醒另外的线程来处理，自己继续wait()直至条件满足再往下执行。
+4. notify() 是对notifyAll()的一个优化，但它有很精确的应用场景，并且要求正确使用。不然可能导致死锁。正确的场景应该是 WaitSet中等待的是相同的条件，唤醒任一个都能正确处理接下来的事项，如果唤醒的线程无法正确处理，务必确保继续notify()下一个线程，并且自身需要重新回到WaitSet中.
+
 ### (4).sleep()和wait()有什么区别  
+
+1. 对于sleep()方法，我们首先要知道该方法是属于Thread类中的。而wait()方法，则是属于Object类中的。
+2. sleep()方法导致了程序暂停执行指定的时间，让出cpu该其他线程，但是他的监控状态依然保持着，当指定的时间到了又会自动恢复运行状态。在调用sleep()方法的过程中，线程不会释放对象锁。
+3. 当调用wait()方法的时候，线程会放弃对象锁，进入等待此对象的等待锁定池，只有针对此对象调用notify()方法后本线程才进入对象锁定池准备，获取对象锁进入运行状态。
+
 ### (5).volatile是什么？可以保证有序性吗？  
 ### (6).Thread类中的start()和run方法有什么区别？  
 ### (7).为什么wait、notify、notifyAll这些方法不在Thread类里面？  

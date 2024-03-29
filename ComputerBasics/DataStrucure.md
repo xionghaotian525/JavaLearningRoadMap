@@ -1,36 +1,56 @@
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-
 # DataStructure
 >数据结构
 
 ## 目录
-
-- [DataStructure](#datastructure)
+[toc]
+<!-- - [DataStructure](#datastructure)
   - [目录](#目录)
   - [一、线性结构](#一线性结构)
   - [二、树形结构](#二树形结构)
-    - [树](#树)
-    - [二叉树](#二叉树)
-    - [平衡查找树](#平衡查找树)
-      - [平衡二叉树](#平衡二叉树)
-        - [AVL](#avl)
-        - [红黑树](#红黑树)
-      - [多路查找树（特殊）](#多路查找树特殊)
-        - [B树](#b树)
-        - [B+树](#b树-1)
-    - [trie树（前缀树）](#trie树前缀树)
-    - [字典树](#字典树)
-    - [哈夫曼树](#哈夫曼树)
-    - [堆](#堆)
-  - [三、图形结构](#三图形结构)
+    - [2.1 树](#21树)
+    - [2.2 二叉树](#22二叉树)
+    - [2.3 平衡查找树](#23平衡查找树)
+      - [2.3.1平衡二叉查找树](#231平衡二叉查找树)
+        - [2.3.1.1 AVL](#2311avl)
+        - [2.3.1.2 红黑树](#2312红黑树)
+      - [2.3.2多路平衡查找树](#232多路平衡查找树)
+        - [2.3.2.1 B树](#2321b树)
+        - [2.3.2.2 B+树](#2322b树)
+    - [2.4 trie树（前缀树）](#24trie树前缀树)
+    - [2.5 字典树](#25字典树)
+    - [2.6 哈夫曼树](#26哈夫曼树)
+    - [2.7 堆](#27堆)
+  - [三、图形结构](#三图形结构) -->
 
 ## 一、线性结构
 
->复习时总结
+### 1.1 数组
+
+#### 1.1.1 一维数组
+
+#### 1.1.2 二维数组
+
+### 1.2 链表
+
+#### 1.2.1 单链表
+#### 1.2.2 双链表
+#### 1.2.3 循环链表
+
+### 1.3 字符串
+
+### 1.4 栈
+
+#### 1.4.1 基于数组实现
+#### 1.4.2 基于链表实现
+
+### 1.5 队列
+
+#### 1.5.1 基于数组实现
+#### 1.5.2 基于链表实现
 
 ## 二、树形结构
 
-### 树
+### 2.1 树
 
 **树的基本概念：**
 
@@ -142,7 +162,7 @@ class Tree {
    ![](/Res/images/树的层次遍历.png) 
 
 
-### 二叉树
+### 2.2 二叉树
 **二叉树的基本概念**
 
 - 一棵二叉树是结点的一个有限集合，该集合或者为空，或者是由一个根节点加上两棵别称    为左子树和右子树的二叉树组成。
@@ -510,16 +530,156 @@ public class TreeNode {
  
     }
    ``` 
-### 平衡查找树
-#### 平衡二叉树
-##### AVL
-##### 红黑树
-#### 多路查找树（特殊）
-##### B树
-##### <a id = "bplus"></a>B+树 
-### trie树（前缀树）
-### 字典树
-### 哈夫曼树
-### 堆
+### 2.3 平衡查找树
+
+1. 平衡查找树是一类数据结构，在这类数据结构中，树的高度或深度保持在对数级别，以确保各种动态集合操作（如插入、删除、查找等）能够在对数时间内进行。平衡查找树的关键特点是，它们通过特定的算法来维持树的平衡性，从而避免退化成与链表相似的性能，即避免了最坏情况下的线性时间操作。
+2. 在平衡查找树中，"平衡"并不意味着树完全平衡，而是指差异在可接受的范围内，通常是子树高度的一个固定界限。这样，即便是在插入或删除节点后，这种数据结构也可以通过自平衡操作（如旋转）来保持其高度较低，从而保持操作效率。
+3. AVL树和红黑树是两种最典型的平衡查找树
+4. 平衡查找树的目的是为了优化查找操作，以及与此相关的其他动态集合操作的性能，特别是在频繁改动数据集的应用场景中。
+#### 2.3.1 平衡二叉查找树
+##### 2.3.1.1 AVL
+1. **AVL树的概念和特点：**   
+
+AVL树是第一个被发明的自平衡二叉搜索树，在插入和删除节点时，AVL树会通过一系列旋转操作来保证树的平衡，确保任何时候任何节点的两个子树的高度差不超过1。这个特性使得AVL树在最坏的情况下也能保证查找、插入、删除操作时间复杂度为O(log n)。
+
+2. **AVL树的基本操作：**
+  
+- 查找：和普通的二叉搜索树一样进行。
+- 插入：首先像在普通二叉搜索树一样插入节点。之后，检查沿着从插入点到根节点路径上的每个节点，确保它们满足AVL树的平衡条件。如果发现某节点不平衡，进行相应的旋转操作。
+- 删除：删除操作首先也是按照二叉搜索树的删除方式进行。删除之后，沿着从删除点到根节点路径上的每个节点进行平衡性检查，并进行必要的旋转操作。
+- 旋转操作：AVL树通过四种旋转操作来保持平衡：左旋转、右旋转、左右旋转和右左旋转。
+3. **AVL的代码实现：**
+```java
+class AVLNode {
+    int key, height;
+    AVLNode left, right;
+
+    AVLNode(int d) {
+        key = d;
+        height = 1;
+    }
+}
+
+class AVLTree {
+    AVLNode root;
+
+    // 获取节点的高度
+    int height(AVLNode N) {
+        if (N == null)
+            return 0;
+        return N.height;
+    }
+
+    // 右旋操作
+    AVLNode rightRotate(AVLNode y) {
+        AVLNode x = y.left;
+        AVLNode T2 = x.right;
+
+        // 执行旋转
+        x.right = y;
+        y.left = T2;
+
+        // 更新高度
+        y.height = Math.max(height(y.left), height(y.right)) + 1;
+        x.height = Math.max(height(x.left), height(x.right)) + 1;
+
+        // 返回新的根
+        return x;
+    }
+
+    // 左旋操作
+    AVLNode leftRotate(AVLNode x) {
+        AVLNode y = x.right;
+        AVLNode T2 = y.left;
+
+        // 执行旋转
+        y.left = x;
+        x.right = T2;
+
+        // 更新高度
+        x.height = Math.max(height(x.left), height(x.right)) + 1;
+        y.height = Math.max(height(y.left), height(y.right)) + 1;
+
+        // 返回新的根
+        return y;
+    }
+
+    // 获取平衡因子
+    int getBalance(AVLNode N) {
+        if (N == null)
+            return 0;
+        return height(N.left) - height(N.right);
+    }
+
+    // 插入节点
+    AVLNode insert(AVLNode node, int key) {
+        /* 1. 执行常规BST插入 */
+        if (node == null)
+            return (new AVLNode(key));
+
+        if (key < node.key)
+            node.left = insert(node.left, key);
+        else if (key > node.key)
+            node.right = insert(node.right, key);
+        else // 不允许出现重复的关键字
+            return node;
+
+        /* 2. 更新节点的高度 */
+        node.height = 1 + Math.max(height(node.left),
+                                  height(node.right));
+
+        /* 3. 获取节点的平衡因子，检查该节点是否失衡 */
+        int balance = getBalance(node);
+
+        // 如果节点失衡，有四种情况：
+
+        // 左左情况
+        if (balance > 1 && key < node.left.key)
+            return rightRotate(node);
+
+        // 右右情况
+        if (balance < -1 && key > node.right.key)
+            return leftRotate(node);
+
+        // 左右情况
+        if (balance > 1 && key > node.left.key) {
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+
+        // 右左情况
+        if (balance < -1 && key < node.right.key) {
+            node.right = rightRotate(node.right);
+            return leftRotate(node);
+        }
+
+        /* 返回节点指针 */
+        return node;
+    }
+
+    // 其他方法如删除节点等...
+}
+```
+##### 2.3.1.2 红黑树
+1. **红黑树的概念**
+
+红黑树相较于AVL树提供了更加宽松的平衡条件，允许路径长度的差异更大。它通过确保树中不存在两个连续的红节点并且任一节点到其每个叶子节点的所有路径上包含相同数目的黑节点，来维持平衡。
+
+2. **红黑树的特点** 
+    - 节点颜色：每个节点要么是红的，要么是黑的。
+    - 根节点：树的根节点是黑色的。
+    - 红色节点规则：如果一个节点是红色的，那么它的两个子节点都是黑色的。
+    - 黑色高度：从任一节点到其叶子的所有路径都包含相同数目的黑色节点。
+    - 叶子节点：所有叶子节点（NIL或空节点）都是黑色的。
+
+3. **红黑树的代码实现**
+
+#### 2.3.2 多路平衡查找树
+##### 2.3.2.1 B树
+##### 2.3.2.2 B+树 
+### 2.4 trie树（前缀树）
+### 2.5 字典树
+### 2.6 哈夫曼树
+### 2.7 堆
 
 ## 三、图形结构
