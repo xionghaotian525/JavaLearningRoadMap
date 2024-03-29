@@ -481,7 +481,8 @@ class Solution {
 ### 108.将有序数组转化为二叉搜索树
 
 1. **递归**
->左右等分建立左右子树，中间节点作为子树根节点，递归该过程
+
+左右等分建立左右子树，中间节点作为子树根节点，递归该过程
 
 ```java
 class Solution {
@@ -505,6 +506,12 @@ class Solution {
 ### 98.验证二叉搜索树
 
 1. **递归**
+
+- 如果根节点为 null，说明是一颗空树，返回 true；
+- 如果当前节点的值小于等于最小值 min 或大于等于最大值 max，说明不满足 BST 的性质，返回 false；
+- 递归验证左子树，左子树的值范围更新为 (min, node.val)，即左子树的值必须小于当前节点的值；
+- 递归验证右子树，右子树的值范围更新为 (node.val, max)，即右子树的值必须大于当前节点的值；
+- 如果左右子树都是 BST，且当前节点的值处于正确的范围内，返回 true。
 ```java
 class Solution {
     public boolean isValidBST(TreeNode root) {
@@ -523,6 +530,14 @@ class Solution {
 }
 ```
 2. **利用中序遍历的性质**
+
+- 如果根节点为 null，说明是一颗空树，返回 true；
+- 递归验证左子树，如果左子树不是 BST，返回 false；
+- 检查当前节点的值是否大于上一个节点的值，如果是，则更新上一个节点的值为当前节点的值，并继续递归验证右子树；
+- 如果不满足以上条件，说明不是 BST，返回 false；
+- 如果遍历完所有节点都符合条件，返回 true。
+
+这个算法利用了 BST 的性质：对于 BST 中序遍历得到的序列是递增的。因此，通过中序遍历验证节点值的顺序是否递增，就可以判断该二叉树是否为 BST。
 ```java
 class Solution {
     double last = -Double.MAX_VALUE;
@@ -540,6 +555,242 @@ class Solution {
     }
 }
 ```
+利用二叉搜索树中序遍历出来是一个升序数组的特性。 利用一个TreeNode记录当前节点的上一个节点的值，然后将两个值不断比较查看是否符合升序的特性，如果不符合直接返回false，反之就是一颗二叉搜索树。
+```java
+class Solution {
+    TreeNode pre = null;
+    public boolean isValidBST(TreeNode root) {
+        if(root == null){
+            return true;
+        }
+        boolean left = isValidBST(root.left);
+        if(pre != null){
+            if(root.val <= pre.val){
+                return false;
+            }
+        }
+        pre = root;
+        boolean right = isValidBST(root.right);
+        return left && right;
+    }
+}
+```
 
 ## 2024/3/29
 
+### 70.爬楼梯
+
+1. **动态规划**
+
+对于爬楼梯问题，可以使用动态规划的方法，其时间复杂度为 O(n)。具体做法是，定义一个长度为 n+1 的数组 dp，其中 dp[i] 表示爬到第 i 阶楼梯的方法数。初始状态为 dp[0] = 1 和 dp[1] = 1，因为爬到第 0 阶和第 1 阶楼梯的方法数都是 1。然后从第 2 阶开始，逐步计算 dp[i] 的值，状态转移方程为 dp[i] = dp[i-1] + dp[i-2]，即到达第 i 阶楼梯的方法数等于到达第 i-1 阶楼梯的方法数加上到达第 i-2 阶楼梯的方法数。最终 dp[n] 就是所求的结果。
+```java
+class Solution {
+    public int climbStairs(int n) {
+        if (n <= 1) {
+            return 1;
+        }
+        
+        int[] dp = new int[n + 1];
+        dp[0] = 1;
+        dp[1] = 1;
+        
+        for (int i = 2; i <= n; i++) {
+            dp[i] = dp[i - 1] + dp[i - 2];
+        }
+        
+        return dp[n];
+    }
+}
+
+```
+2. **拓展思考**
+
+Java的话因为返回值为int，n=46时，结果会溢出，因此n < 46，那么就有：
+```java
+public int climbStairs(int n) {
+    
+    int result = 0;
+    
+    switch(n){
+    case 1: result = 1; break;
+    case 2: result = 2; break;
+    case 3: result = 3; break;
+    case 4: result = 5; break;
+    case 5: result = 8; break;
+    case 6: result = 13; break;
+    case 7: result = 21; break;
+    case 8: result = 34; break;
+    case 9: result = 55; break;
+    case 10: result = 89; break;
+    case 11: result = 144; break;
+    case 12: result = 233; break;
+    case 13: result = 377; break;
+    case 14: result = 610; break;
+    case 15: result = 987; break;
+    case 16: result = 1597; break;
+    case 17: result = 2584; break;
+    case 18: result = 4181; break;
+    case 19: result = 6765; break;
+    case 20: result = 10946; break;
+    case 21: result = 17711; break;
+    case 22: result = 28657; break;
+    case 23: result = 46368; break;
+    case 24: result = 75025; break;
+    case 25: result = 121393; break;
+    case 26: result = 196418; break;
+    case 27: result = 317811; break;
+    case 28: result = 514229; break;
+    case 29: result = 832040; break;
+    case 30: result = 1346269; break;
+    case 31: result = 2178309; break;
+    case 32: result = 3524578; break;
+    case 33: result = 5702887; break;
+    case 34: result = 9227465; break;
+    case 35: result = 14930352; break;
+    case 36: result = 24157817; break;
+    case 37: result = 39088169; break;
+    case 38: result = 63245986; break;
+    case 39: result = 102334155; break;
+    case 40: result = 165580141; break;
+    case 41: result = 267914296; break;
+    case 42: result = 433494437; break;
+    case 43: result = 701408733; break;
+    case 44: result = 1134903170; break;
+    case 45: result = 1836311903; break;
+    
+    }
+    return result;
+}
+```
+### 118.杨辉三角
+
+1. **动态规划**
+
+```java
+class Solution {
+    public List<List<Integer>> generate(int numRows) {
+        List<List<Integer>> list = new ArrayList<>();
+        for(int i=0;i<numRows;i++){
+            List<Integer> row=new ArrayList<>();
+            for(int j=0;j<=i;j++){
+                if(j==0||i==j){ //必须要有j==0
+                    row.add(1);
+                }else{
+                    int num = list.get(i-1).get(j-1)+list.get(i-1).get(j);
+                    row.add(num);
+                }
+            }
+            list.add(row);
+        }
+        return list;
+    }
+}
+```
+
+### 230.二叉搜索树中第k小的元素
+
+1. **二叉树转化为数组**
+
+```java
+class Solution {
+    public int kthSmallest(TreeNode root, int k) {
+        int[] array=treeToArray(root);
+        return array[k-1];
+    }
+    public int[] treeToArray(TreeNode root) {
+            List<Integer> list = new ArrayList<>();
+            inOrderTraversal(root, list);
+            int[] result = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = list.get(i);
+            }
+            return result;
+        }
+        
+        private void inOrderTraversal(TreeNode root, List<Integer> list) {
+            if (root == null) {
+                return;
+            }
+            inOrderTraversal(root.left, list);
+            list.add(root.val);
+            inOrderTraversal(root.right, list);
+        }
+}
+```
+
+2. **中序遍历**
+
+中序遍历是二叉搜索树的一个重要性质：它会按照升序的顺序访问树中的节点。因此，在二叉搜索树中，中序遍历会从最小的节点开始，逐渐访问到最大的节点。这样，如果我们进行中序遍历，并记录遍历到的第 k 个节点，就可以得到第 k 小的元素。
+
+换句话说，利用中序遍历的性质，我们可以在遍历过程中找到第 k 小的元素，而不需要遍历整个树。这样做的好处是节省了时间，因为在一般情况下，中序遍历的时间复杂度是 O(n)，其中 n 是树中节点的数量，而直接遍历整棵树需要 O(n) 的时间。
+```java
+public class Solution {
+    private int count = 0;
+    private int result = 0;
+    
+    public int kthSmallest(TreeNode root, int k) {
+        inOrderTraversal(root, k);
+        return result;
+    }
+    
+    private void inOrderTraversal(TreeNode root, int k) {
+        if (root == null) {
+            return;
+        }
+        inOrderTraversal(root.left, k);
+        count++;
+        if (count == k) {
+            result = root.val;
+            return;
+        }
+        inOrderTraversal(root.right, k);
+    }
+}
+
+```
+
+### 114.二叉树展开为链表
+
+1. **先序遍历**
+
+- 定义一个空列表 list，用于存储二叉树的节点；
+- 使用先序遍历将二叉树的节点按顺序添加到 list 中；
+- 遍历 list，对于列表中的每个节点，将其左子树设为 null，右子树设为列表中的下一个节点（如果存在）。
+```java
+class Solution {
+    public void flatten(TreeNode root) {
+        List<TreeNode> list = new ArrayList<>();
+        preOrder(root,list);
+        for(int i=0;i<list.size()-1;i++){
+            list.get(i).left=null;
+            list.get(i).right = list.get(i+1);
+        }
+    }
+    public void preOrder(TreeNode root,List<TreeNode> list){
+        if(root==null){
+            return;
+        }
+        list.add(root);
+        preOrder(root.left,list);
+        preOrder(root.right,list);
+    }
+}
+```
+
+2. **深度优先搜索**
+```java
+class Solution {
+    TreeNode link = new TreeNode();
+    public void flatten(TreeNode root) {
+        if(root == null) return;
+        link.left = null;
+        link.right = root;
+        link = link.right;
+        
+        TreeNode left = root.left; // 因为dfs时会改变left和right 指针，所以需要提前保存
+        TreeNode right = root.right;
+        flatten(left);
+        flatten(right);
+    }
+}
+```

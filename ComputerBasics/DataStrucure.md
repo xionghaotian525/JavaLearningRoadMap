@@ -318,8 +318,35 @@ class Tree {
         }
     }
     ```
+    - 二叉搜索树转化为数组
 
-4. **线索二叉树（Threaded Binary Tree）**：
+    ```java
+    import java.util.*;
+
+    public class Solution {
+        public int[] treeToArray(TreeNode root) {
+            List<Integer> list = new ArrayList<>();
+            inOrderTraversal(root, list);
+            int[] result = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = list.get(i);
+            }
+            return result;
+        }
+        
+        private void inOrderTraversal(TreeNode root, List<Integer> list) {
+            if (root == null) {
+                return;
+            }
+            inOrderTraversal(root.left, list);
+            list.add(root.val);
+            inOrderTraversal(root.right, list);
+        }
+    }
+
+    ```
+
+1. **线索二叉树（Threaded Binary Tree）**：
    - 线索二叉树是对普通二叉树进行改进，以便在遍历树时提供更快的访问。
    - 在线索二叉树中，除了左子节点和右子节点之外，每个节点还有一个指向中序遍历下的前驱节点和后继节点的指针。
    - 线索化可以使得中序遍历的过程中，无需使用递归或栈来实现。
@@ -440,6 +467,27 @@ public class TreeNode {
 5. 遍历
    1. 前序遍历
    ```java
+    //递归
+    class Solution {
+        public List<Integer> preorderTraversal(TreeNode root) {
+            List<Integer> result = new ArrayList<>();
+            preorder(root, result);
+            return result;
+        }
+        
+        private void preorder(TreeNode root, List<Integer> result) {
+            if (root == null) {
+                return;
+            }
+            // 先访问根节点
+            result.add(root.val);
+            // 递归遍历左子树
+            preorder(root.left, result);
+            // 递归遍历右子树
+            preorder(root.right, result);
+        }
+    }
+
     //递归方法
     public void preOrder(TreeNode root) {
         if(root == null) return;
@@ -470,6 +518,26 @@ public class TreeNode {
    ``` 
    2. 中序遍历
    ```java
+    //递归
+    class Solution {
+        public List<Integer> inorderTraversal(TreeNode root) {
+            List<Integer> result = new ArrayList<>();
+            inorder(root, result);
+            return result;
+        }
+        
+        private void inorder(TreeNode root, List<Integer> result) {
+            if (root == null) {
+                return;
+            }
+            // 递归遍历左子树
+            inorder(root.left, result);
+            // 访问根节点
+            result.add(root.val);
+            // 递归遍历右子树
+            inorder(root.right, result);
+        }
+    }
     //递归方法
     public void inOrder(TreeNode root) {
         if(root == null) return;
@@ -501,6 +569,26 @@ public class TreeNode {
    ``` 
    3. 后序遍历
    ```java
+    //递归
+    class Solution {
+        public List<Integer> postorderTraversal(TreeNode root) {
+            List<Integer> result = new ArrayList<>();
+            postorder(root, result);
+            return result;
+        }
+        
+        private void postorder(TreeNode root, List<Integer> result) {
+            if (root == null) {
+                return;
+            }
+            // 递归遍历左子树
+            postorder(root.left, result);
+            // 递归遍历右子树
+            postorder(root.right, result);
+            // 访问根节点
+            result.add(root.val);
+        }
+    }
     //递归方法
     public void postOrder(TreeNode root) {
         if(root == null) return;
@@ -512,6 +600,37 @@ public class TreeNode {
    ```  
    4. 层序遍历
    ```java
+    //chatGPT
+    class Solution {
+        public List<List<Integer>> levelOrder(TreeNode root) {
+            List<List<Integer>> result = new ArrayList<>();
+            if (root == null) {
+                return result;
+            }
+            
+            Queue<TreeNode> queue = new LinkedList<>();
+            queue.offer(root);
+            
+            while (!queue.isEmpty()) {
+                int size = queue.size();
+                List<Integer> level = new ArrayList<>();
+                for (int i = 0; i < size; i++) {
+                    TreeNode node = queue.poll();
+                    level.add(node.val);
+                    if (node.left != null) {
+                        queue.offer(node.left);
+                    }
+                    if (node.right != null) {
+                        queue.offer(node.right);
+                    }
+                }
+                result.add(level);
+            }
+            
+            return result;
+        }
+    }
+    //打印
     public void levelOrder(TreeNode root) {
         Queue<TreeNode> queue = new LinkedList<>();
        if(root != null) {
