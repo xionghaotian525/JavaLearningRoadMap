@@ -1674,3 +1674,14 @@ from《JavaGuide》：
    - AtomicLongFieldUpdater ：原⼦更新⻓整形字段的更新器
    - AtomicReferenceFieldUpdater ：原⼦更新引⽤类型字段的更新器
 ### (48).多线程中的问题（内存泄漏、上下文切换、死锁）
+### (49).线程安全实现方法
+1. 互斥同步
+   1. syncronized
+   2. reentrantlock
+2. 非阻塞同步
+   1. CAS
+   2. Atomic类
+3. 无同步方案
+   1. 栈封闭
+   2. 线程本地存储（ThreadLocal）
+   3. 可重入代码（reentrant code）
