@@ -794,3 +794,138 @@ class Solution {
     }
 }
 ```
+## 2024/4/1
+
+### 115.最小栈
+
+1. **使用链表**
+```java
+class MinStack {
+    private Node head;
+    public MinStack() {
+
+    }
+    
+    public void push(int x) {
+        if(head==null){
+            head=new Node(x,x);
+        }
+        else{
+            head=new Node(x,Math.min(x,head.min),head);
+        }
+    }
+    
+    public void pop() {
+        head=head.next;
+    }
+    
+    public int top() {
+        return head.val;
+    }
+    
+    public int getMin() {
+        return head.min;
+    }
+
+    private class Node{
+        int val;
+        int min;
+        Node next;
+
+        private Node(int val,int min){
+            this(val,min,null);
+        }
+        private Node(int val,int min ,Node next){
+            this.val=val;
+            this.min=min;
+            this.next=next;
+        }
+    }
+}
+
+/**
+ * Your MinStack object will be instantiated and called as such:
+ * MinStack obj = new MinStack();
+ * obj.push(val);
+ * obj.pop();
+ * int param_3 = obj.top();
+ * int param_4 = obj.getMin();
+ */
+```
+
+2. **使用数组**
+使用数组实现栈，内部维护栈顶，最小值指针。
+```java
+class MinStack {
+
+   private  int[] stack;
+   private  int top; // 栈顶
+   private int min; //最小值指针
+   
+   public MinStack() {
+       this.stack = new int[30000];
+       this.top = -1;
+       this.min = -1;
+   }
+   
+   public void push(int val) {
+       //压栈
+       this.stack[++top] = val;
+       
+       if(min == -1){//判断是否是第一个元素
+           min = top;
+       }else{
+           if(stack[min] > val){ //比较大小
+               min = top;  //更新指针
+           }
+       }
+   }
+   
+   public void pop() {
+       top --; //出栈
+       if(top == -1){//判断栈是否为空
+           min = -1;
+       }else if(min > top){//判断最小值指针是否合法
+           
+           long min_val = Long.MAX_VALUE;
+           for(int i = 0;i<= top;i++){//重新找最小
+               if(min_val > stack[i]){
+                   min_val = stack[i];
+                   min = i;
+               }
+           }
+       }
+   }
+   
+   public int top() {
+       return stack[top];
+   }
+   
+   public int getMin() {
+       return stack[min];
+   }
+} 
+```
+### 23.合并K个升序链表
+1. **傻瓜式**
+```java
+class Solution {
+    public ListNode mergeKLists(ListNode[] lists) {
+        List<Integer> list=new ArrayList<>();
+        for(int i=0;i<lists.length;i++){
+            ListNode n=lists[i];
+            while(n!=null){
+                list.add(n.val);
+                n=n.next;
+            }
+        }
+        Collections.sort(list);
+        ListNode ans=new ListNode(-1),h=ans;
+        for(int i=0;i<list.size();i++){
+            h.next=new ListNode(list.get(i));
+            h=h.next;
+        }
+        return ans.next;
+    }
+}
+```
