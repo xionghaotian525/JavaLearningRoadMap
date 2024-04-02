@@ -8,6 +8,12 @@
 ![](/Res/images/JVM知识框架2.png)
 ![](/Res/images/JVM知识框架3.png)
 ![](/Res/images/JVM内存.png)
+![](/Res/images/JVM内存2.png)
+
+### 类加载机制
+### JVM内存模型（运行时数据区）
+### 执行引擎
+
 ## 二、八股问题整理
 
 ### (1).简述一下JVM的内存模型
