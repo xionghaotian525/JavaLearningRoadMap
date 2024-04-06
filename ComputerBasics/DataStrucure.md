@@ -502,7 +502,7 @@ public class TreeNode {
     }
     Stack<TreeNode> stack=new Stack<>();
     stack.push(head);
-        while(！stack.isEmpty())
+        while(!stack.isEmpty())
         {
             TreeNOde node=stack.pop();
             System.out.print(node.val+" ");

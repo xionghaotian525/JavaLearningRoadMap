@@ -916,3 +916,192 @@ class Solution {
     }
 }
 ```
+## 2024/4/6
+### 105.从前序与中序遍历序列构造二叉树
+1. **递归**
+- **确定根节点**：前序遍历的第一个节点即为当前子树的根节点。
+- **在中序遍历中找到根节点的位置**：根据前序遍历中的根节点的值，在中序遍历中找到对应的位置，从而确定左子树和右子树的范围。
+- **递归构建左右子树**：根据确定的左右子树的范围，递归调用构建方法来构建左右子树。
+- **返回根节点**：返回当前子树的根节点。
+```java
+class Solution {
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        if (preorder == null || inorder == null || preorder.length == 0 || inorder.length == 0) {
+            return null;
+        }
+        return build(preorder, 0, preorder.length - 1, inorder, 0, inorder.length - 1);
+    }
+    
+    private TreeNode build(int[] preorder, int preStart, int preEnd, int[] inorder, int inStart, int inEnd) {
+        if (preStart > preEnd || inStart > inEnd) {
+            return null;
+        }
+        
+        int rootVal = preorder[preStart]; // 根节点的值为前序遍历的第一个元素
+        TreeNode root = new TreeNode(rootVal);
+        
+        int index = 0; // 在中序遍历中找到根节点的位置
+        for (int i = inStart; i <= inEnd; i++) {
+            if (inorder[i] == rootVal) {
+                index = i;
+                break;
+            }
+        }
+        
+        // 根据中序遍历中根节点的位置，划分左右子树的范围
+        int leftSize = index - inStart;
+        
+        // 递归构建左右子树
+        root.left = build(preorder, preStart + 1, preStart + leftSize, inorder, inStart, index - 1);
+        root.right = build(preorder, preStart + leftSize + 1, preEnd, inorder, index + 1, inEnd);
+        
+        return root;
+    }
+}
+
+```
+2. **递归-哈希表优化**
+
+使用哈希表可以优化**查找根节点在中序遍历中的位置的过程**，从而提高构建二叉树的效率。具体来说，可以先构建一个哈希表，将中序遍历中每个节点的值和索引存储起来，然后在构建二叉树时，**根据先序遍历中的根节点值直接在哈希表中查找其在中序遍历中的位置**，而不再需要遍历中序遍历数组来查找。这样可以将查找根节点位置的时间复杂度从 O(n) 降低到 O(1)
+```java
+import java.util.HashMap;
+
+class Solution {
+    private HashMap<Integer, Integer> inorderMap;
+
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        if (preorder == null || inorder == null || preorder.length == 0 || inorder.length == 0) {
+            return null;
+        }
+
+        // 构建中序遍历哈希表
+        inorderMap = new HashMap<>();
+        for (int i = 0; i < inorder.length; i++) {
+            inorderMap.put(inorder[i], i);
+        }
+
+        return build(preorder, 0, preorder.length - 1, 0, inorder.length - 1);
+    }
+
+    private TreeNode build(int[] preorder, int preStart, int preEnd, int inStart, int inEnd) {
+        if (preStart > preEnd || inStart > inEnd) {
+            return null;
+        }
+
+        int rootVal = preorder[preStart];
+        TreeNode root = new TreeNode(rootVal);
+
+        int index = inorderMap.get(rootVal);
+        int leftSize = index - inStart;
+
+        root.left = build(preorder, preStart + 1, preStart + leftSize, inStart, index - 1);
+        root.right = build(preorder, preStart + leftSize + 1, preEnd, index + 1, inEnd);
+
+        return root;
+    }
+}
+
+```
+3. **迭代**
+
+- 创建根节点并将其入栈。
+- 初始化先序遍历和中序遍历的索引变量 preIndex 和 inIndex，并将它们分别初始化为 1 和 0。
+- 循环执行以下步骤，直到先序遍历数组为空：
+    1. 获取栈顶节点作为当前节点，并从栈中弹出。
+    2. 如果当前节点的值等于中序遍历数组的值`（inorder[inIndex]）`，则将 inIndex 向后移动一位，并判断当前节点是否有右子节点，如果有，则将右子节点入栈。
+    3. 否则，将当前节点的左子节点设置为先序遍历数组的下一个值，并将左子节点入栈，同时 preIndex 向后移动一位。
+- 返回根节点。
+```java
+import java.util.Stack;
+
+class Solution {
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        if (preorder == null || inorder == null || preorder.length == 0 || inorder.length == 0) {
+            return null;
+        }
+
+        TreeNode root = new TreeNode(preorder[0]);
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(root);
+        int preIndex = 1;
+        int inIndex = 0;
+
+        while (preIndex < preorder.length) {
+            TreeNode curr = stack.peek();
+            if (curr.val == inorder[inIndex]) {
+                while (!stack.isEmpty() && stack.peek().val == inorder[inIndex]) {
+                    curr = stack.pop();
+                    inIndex++;
+                }
+                curr.right = new TreeNode(preorder[preIndex]);
+                curr = curr.right;
+                stack.push(curr);
+                preIndex++;
+            } else {
+                curr.left = new TreeNode(preorder[preIndex]);
+                curr = curr.left;
+                stack.push(curr);
+                preIndex++;
+            }
+        }
+
+        return root;
+    }
+}
+
+```
+### 121.买卖股票的最佳时机
+1. **蛮力法（超时）**
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int maxProfit = 0;
+        for(int i = 0; i < prices.length - 1; i++) {
+            int max = prices[i];
+            for(int j = i + 1; j < prices.length; j++) {
+                if(prices[j] > max) {
+                    max = prices[j];
+                }
+            }
+            int profit = max - prices[i];
+            if(profit > maxProfit) {
+                maxProfit = profit;
+            }
+        }
+        return maxProfit;
+    }
+}
+```
+2. **动态规划**
+买的那天一定是卖的那天之前的最小值。 每到一天，维护那天之前的最小值即可。
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int len = prices.length;
+        if (len == 0) return 0;
+        int[][] dp = new int[len][2];
+        dp[0][0] -= prices[0];
+        dp[0][1] = 0;
+        for (int i = 1; i < len; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], -prices[i]);
+            dp[i][1] = Math.max(dp[i - 1][1], prices[i] + dp[i - 1][0]);
+        }
+        return dp[len - 1][1];
+    }
+}
+
+```
+3. **贪心**
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int max = 0, min = Integer.MAX_VALUE;
+        for (int price : prices) {
+            if (price < min) min = price;
+            else max = Math.max(price - min, max); // 如果当前值大于最小值，且收益也更大。
+        }
+        return max;
+    }
+}
+
+```
