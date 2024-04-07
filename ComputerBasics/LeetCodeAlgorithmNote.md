@@ -1105,3 +1105,83 @@ class Solution {
 }
 
 ```
+## 2024/4/7
+### 198.打家劫舍
+
+1. **普通回溯（超时）**
+    - 有序列表若选择偷index就不能偷前一个屋子index-1，会触发警报。而index-2及之前的屋子都是可能的选项，那么此时若偷index能获得的最大收益为：dfs(index - 2) + nums[index]，也就是idnex-2及之前所能-获得的最大收益加上index处的收益。
+    - 有序列表若选择不偷index，则前一个屋子idnex-1是可能的选项，那么此时由于idnex处无收益，当前可获得的最大收益为dfs(index - 1)。
+   ```java
+    class Solution {
+    // 1、普通回溯（递归），时间复杂度过高（过多重复分支计算），超时
+        public int rob(int[] nums) {
+            int len = nums.length;
+            return dfs(nums, len - 1);
+        }
+        public int dfs(int[] nums, int index){
+            // 当数组下标<0时，说明已无人家可偷，直接返回此后可获得的收益0。
+            if(index < 0){return 0;}
+            return Math.max(dfs(nums, index - 1), dfs(nums, index - 2) + nums[index]);
+        }
+    }
+   ```  
+2. **记忆化搜索**
+    只需要利用哈希表对搜索并计算过的分支形成”记忆“就可以解决，在搜索到某个分支（某一家index）时 ，先查询哈希表cache种是否有记录，若有则说明之前搜索过程中计算过，直接返回记忆值cache[index]，若cache[index]仍未数组初始值，则将本次计算结果录入表中，防止以后遇到再次重复计算。这样相当于所有的分支可能都只计算了一遍（低层次分支被查找的次数可能会很多，但是只有首次使用时需要计算，后面只需进行时间复杂度为1的查表操作即可）。
+    ```java
+    class Solution {
+    // 2、递归回溯+记忆化搜索（有cache数组缓存，所有分支只需要计算一遍）
+        int[] cache;
+        public int rob(int[] nums) {
+            
+            int len = nums.length;
+            cache = new int[len];
+            for(int i = 0; i < len; ++i){   // 初始化记忆缓存数组cache
+                cache[i] = -1;
+            }
+            return dfs(nums, len - 1);
+        }
+        public int dfs(int[] nums, int index){
+            // 当数组下标<0时，说明已无人家可偷，直接返回此后可获得的收益0。
+            if(index < 0){return 0;}
+            // 查询该分支是否计算过，首次遇到则将计算结果录入缓存，避免以后重复计算
+            if(cache[index] != -1){return cache[index];}
+            cache[index] = Math.max(dfs(nums, index-1), dfs(nums, index-2) + nums[index]);
+            return cache[index];
+        }
+    }
+    ```
+
+1. **动态规划**
+    递归改递推优化，省去递归算法自顶向下的搜索过程（按灵神的说法是省去“递”，直接“归”），直接从第一家开始正向推导，cache[i + 2] = Math.max(cache[ i + 1], cache[ i ] + nums[i])。注意当计算cache[0]和cache[1]时，若按正常递推公式将会导致下标出现负数越界，所以可以将cache设置为n+2长，头两位初试默认为0占位，从cache[2]开始一一对应nums的下标进行递推计算，最终所求结果即为cache数组最后一位。
+    ```java
+    class Solution {
+        public int rob(int[] nums) {
+            // 自顶向下递归改为自底向上递推，从初始位置直接开始正向推算，但空间复杂度还是O(n)。
+            int n = nums.length;
+            // 由于计算cache[0]cache[1]时会出现数组下标为负的情况，所以将cache数组直接设定为n+2长，从cache[2]作为计算起点，之前的0和1位默认为零凑位，防止下标越界。
+            int[] cache = new int[n + 2];
+            for(int i = 0; i < n; ++i){
+                cache[i + 2] = Math.max(cache[i + 1], cache[i] + nums[i]);
+            }
+            return cache[n + 1];
+        }
+    }
+    ```
+2. **dp压缩**
+    递推再优化：前面引入cache记忆存储数组后时间复杂度已来到O(n)，但是空间复杂度O(n)还可以继续优化，因为可以发现，在迭代递推过程中，计算每一步cache[i + 2]时候只用到了他之前的两位cache[ i ]和cache[i+1]，以及对位的nums[i]，也就是说只需要用两个临时变量pre1，pre2交替存储当前位之前的cache即可，不需要始终维护整个n+2长度的记忆数组。
+    ```java
+    class Solution {
+        public int rob(int[] nums) {
+            // 滚动数组：递推再次优化空间，使用O(1)级别额外空间解决（舍弃cache数组，用两个临时变量交替存储i位及i+1位）
+            int n = nums.length;
+            int pre1 = 0, pre2 = 0, res = 0;
+            for(int i = 0; i < n; ++i){
+                res = Math.max(pre2, pre1 + nums[i]);
+                pre1 = pre2;
+                pre2 = res;
+            }
+            return res;
+        }
+    }
+    ```
+## 2024/4/8
