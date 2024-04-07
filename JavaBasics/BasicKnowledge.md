@@ -4,7 +4,7 @@
 [toc]
 
 ## 一、个人总结
-### 语言基础
+### 1.1语言基础
 1. **数据类型**
     1. 基本类型：分为**四类八种**
         - 整型：byte（1字节）、short（2字节）、int（4字节）、long（8字节）
@@ -104,7 +104,7 @@
     protected void finalize() throws Throwable {}
 
    ```
-   1. equals()
+   2. **equals()**
 
 - 等价关系
     ```java
@@ -130,14 +130,501 @@
         System.out.println(x == y);      // false    
     ```
 - 实现
+    - 检查是否为同一个对象的引用，如果是直接返回 true；
+    - 检查是否是同一个类型，如果不是，直接返回 false；
+    - 将 Object 对象进行转型；
+    - 判断每个关键域是否相等。
+    ```java
+    public class EqualExample {
+        private int x;
+        private int y;
+        private int z;
 
-   1. hashcode()
-   2. toString()
-   3. clone()
-1. **关键字**
-   1. final
-   2. static
-### 面向对象
+        public EqualExample(int x, int y, int z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            EqualExample that = (EqualExample) o;
+
+            if (x != that.x) return false;
+            if (y != that.y) return false;
+            return z == that.z;
+        }
+    }
+
+    ```
+
+   3. **hashcode()**
+
+- hashCode() 返回散列值，而 equals() 是用来判断两个对象是否等价。等价的两个对象散列值一定相同，但是散列值相同的两个对象不一定等价。
+- 在覆盖 equals() 方法时应当总是覆盖 hashCode() 方法，保证等价的两个对象散列值也相等。
+- 下面的代码中，新建了两个等价的对象，并将它们添加到 HashSet 中。我们希望将这两个对象当成一样的，只在集合中添加一个对象，但是因为 EqualExample 没有实现 hasCode() 方法，因此这两个对象的散列值是不同的，最终导致集合添加了两个等价的对象
+    ```java
+    EqualExample e1 = new EqualExample(1, 1, 1);
+    EqualExample e2 = new EqualExample(1, 1, 1);
+    System.out.println(e1.equals(e2)); // true
+    HashSet<EqualExample> set = new HashSet<>();
+    set.add(e1);
+    set.add(e2);
+    System.out.println(set.size());   // 2
+    ``` 
+- 理想的散列函数应当具有均匀性，即不相等的对象应当均匀分布到所有可能的散列值上。这就要求了散列函数要把所有域的值都考虑进来，可以将每个域都当成 R 进制的某一位，然后组成一个 R 进制的整数。R 一般取 31，因为它是一个奇素数，如果是偶数的话，当出现乘法溢出，信息就会丢失，因为与 2 相乘相当于向左移一位。
+- 一个数与 31 相乘可以转换成移位和减法: `31*x == (x<<5)-x`，编译器会自动进行这个优化。
+    ```java
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + x;
+        result = 31 * result + y;
+        result = 31 * result + z;
+        return result;
+    }
+    ```
+
+   4. **toString()**
+
+- `toString()` 方法是 Java 中的 `Object` 类的一个方法，用于返回对象的字符串表示。该方法通常被子类重写以返回有意义的字符串表示。
+
+- 默认情况下，`Object` 类中的 `toString()` 方法返回的是**对象的类名**，后跟 `@` 符号和**对象的哈希码的无符号十六进制表示**。例如，对于一个名为 `obj` 的对象，其默认的 `toString()` 返回值通常会类似于 `ClassName@hashCode`。默认返回 `ToStringExample@4554617c` 这种形式，其中 @ 后面的数值为**散列码的无符号十六进制**表示。
+    ```java
+    public class ToStringExample {
+        private int number;
+
+        public ToStringExample(int number) {
+            this.number = number;
+        }
+    }
+    ToStringExample example = new ToStringExample(123);
+    System.out.println(example.toString());
+    //输出：ToStringExample@4554617c
+    ```
+
+    ```java
+    public class Person {
+        private String name;
+        private int age;
+
+        public Person(String name, int age) {
+            this.name = name;
+            this.age = age;
+        }
+
+        // 重写toString方法
+        @Override
+        public String toString() {
+            return "Person{name='" + name + "', age=" + age + "}";
+        }
+
+        public static void main(String[] args) {
+            Person person = new Person("Alice", 30);
+            System.out.println(person); // 输出：Person{name='Alice', age=30}
+        }
+    }
+    ```
+   5. **clone()**
+
+- cloneable
+    clone() 是 Object 的 protected 方法，默认对对象进行浅拷贝,它不是 public，一个类不显式去重写 clone()，其它类就不能直接去调用该类实例的 clone() 方法。
+    ```java
+    public class CloneExample {
+        private int a;
+        private int b;
+    }
+    CloneExample e1 = new CloneExample();
+    // CloneExample e2 = e1.clone(); // 'clone()' has protected access in 'java.lang.Object'
+    ```
+    Cloneable 接口是一个标记接口，用于指定对象是“可克隆的”。所谓标记接口，即没有包含方法的接口，它的作用是告诉 Object 类的 clone() 方法，当对实现了 Cloneable 接口的对象调用 clone() 方法时可以合法地进行字段到字段的复制。
+    ```java
+    public class MyClass implements Cloneable {
+        // fields here
+
+        @Override
+        public Object clone() throws CloneNotSupportedException {
+            return super.clone();
+        }
+    }
+    ```
+    当类实现了 Cloneable 接口，它就告诉 Object 的 clone() 方法：“我可以进行复制”。如果尝试克隆一个未实现 Cloneable 接口的对象，clone() 方法将抛出 `CloneNotSupportedException` 异常。
+
+    ```java
+    public class CloneExample {
+        private int a;
+        private int b;
+
+        @Override
+        protected CloneExample clone() throws CloneNotSupportedException {
+            return (CloneExample)super.clone();
+        }
+    }
+    CloneExample e1 = new CloneExample();
+    try {
+        CloneExample e2 = e1.clone();
+    } catch (CloneNotSupportedException e) {
+        e.printStackTrace();
+    }
+    //输出：java.lang.CloneNotSupportedException: CloneExample
+    ```
+
+- 浅拷贝和深拷贝
+    **解惑：** 对于基本数据类型来说，不存在浅拷贝和深拷贝的区别。基本数据类型的字段在拷贝时总是创建值的一个副本，所以修改克隆对象的基本类型字段不会影响源对象的同名字段（可以理解为深拷贝）；深拷贝和浅拷贝是只针对Object和Array这样的引用数据类型的。实现cloneable接口、重写clone()方法时默认是浅拷贝，实现深拷贝需要在克隆的引用类型里重写clone()方法、修改clone方法（额外对引用类型进行一次克隆？，参考下方代码注释）。
+    **浅拷贝：拷贝对象和原始对象的引用类型引用同一个对象。**
+    **深拷贝：拷贝对象和原始对象的引用类型引用不同对象。**
+    ```java
+    class Address {
+        String street;
+
+        Address(String street) {
+            this.street = street;
+        }
+
+        // 浅拷贝情况下，这里不需要实现clone方法
+        // 深拷贝情况下，需要实现这段代码
+        /*
+        @Override
+        protected Object clone() throws CloneNotSupportedException {
+            return super.clone();
+        }
+        */
+    }
+
+    class Person implements Cloneable {
+        int age;
+        Address address;
+
+        Person(int age, String street) {
+            this.age = age;
+            this.address = new Address(street);
+        }
+
+        @Override
+        protected Object clone() throws CloneNotSupportedException {
+            // 默认的clone方法执行的就是浅拷贝
+            Person cloned = (Person) super.clone();
+
+            // 若要实现深拷贝，请取消以下注释的代码段
+            /*
+            cloned.address = (Address) address.clone();
+            */
+
+            return cloned;
+        }
+    }
+    ```
+    ```java
+    public class CloneExample {
+        public static void main(String[] args) {
+            Person originalPerson = new Person(30, "1234 Broadway");
+            try {
+                Person clonedPerson = (Person) originalPerson.clone();
+
+                // 浅拷贝：此时originalPerson与clonedPerson的address属性指向同一个Address对象
+                // 深拷贝：如果取消了Person的clone方法中的注释，那么会为address创建一个新的对象拷贝
+
+                System.out.println("Before changes:");
+                System.out.println("Original person address: " + originalPerson.address.street);
+                System.out.println("Cloned person address: " + clonedPerson.address.street);
+                
+                // 改变原始对象的Address street字段
+                originalPerson.address.street = "5678 Main Street";
+
+                System.out.println("After changes to original person's address street:");
+                System.out.println("Original person address: " + originalPerson.address.street);
+                System.out.println("Cloned person address: " + clonedPerson.address.street);
+
+                // 在浅拷贝的情况下，clonedPerson的address也会发生变化，因为它们引用了同一个Address对象
+                // 在深拷贝的情况下，clonedPerson的address不会发生变化，因为它引用了一个全新的Address对象副本
+
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    ```
+    **浅拷贝输出结果：**
+    ```java
+    Before changes:
+    Original person address: 1234 Broadway
+    Cloned person address: 1234 Broadway
+    After changes to original person's address street:
+    Original person address: 5678 Main Street
+    Cloned person address: 5678 Main Street
+    ```
+    这里可以看到，在浅拷贝后，`originalPerson` 和 `clonedPerson` 的 `address` 属性指向了同一个 `Address` 对象，因此当 `originalPerson` 的 `street` 改变后，`clonedPerson` 中的 `street` 也随之改变。
+    **深拷贝输出结果：**（如果实现了 `Address` 类的 `clone` 方法并在 `Person` 的 `clone` 方法中取消了注释的代码段）
+    ```java
+    Before changes:
+    Original person address: 1234 Broadway
+    Cloned person address: 1234 Broadway
+    After changes to original person's address street:
+    Original person address: 5678 Main Street
+    Cloned person address: 1234 Broadway
+    ```
+    在这种情况下，`clonedPerson` 的 `address` 指向了一个新的 `Address` 对象，该对象是 `originalPerson` 的 `address` 的一个副本。因此，当更改 `originalPerson` 的 `street` 时不会影响 `clonedPerson`。
+- clone()的替代方案
+    使用 clone() 方法来拷贝一个对象即复杂又有风险，它会抛出异常，并且还需要类型转换,可以使用拷贝构造函数或者拷贝工厂来拷贝一个对象。
+    - **拷贝构造函数**
+    ```java
+    class Address {
+        String city;
+        String street;
+
+        public Address(String city, String street) {
+            this.city = city;
+            this.street = street;
+        }
+
+        // Address类的拷贝构造函数
+        public Address(Address otherAddress) {
+            this.city = otherAddress.city;
+            this.street = otherAddress.street;
+        }
+    }
+
+    class Person {
+        String name;
+        Address address;
+
+        public Person(String name, Address address) {
+            this.name = name;
+            this.address = address;
+        }
+
+        // Person类的拷贝构造函数
+        public Person(Person otherPerson) {
+            this.name = otherPerson.name;
+            // 使用Address类的拷贝构造函数，以实现深拷贝
+            this.address = new Address(otherPerson.address);
+        }
+    }
+    ```
+    ```java
+    public class CopyConstructorExample {
+        public static void main(String[] args) {
+            // 创建一个Person及其Address
+            Person originalPerson = new Person("John Doe", new Address("New York", "5th Ave"));
+
+            // 使用拷贝构造函数创建originalPerson的一个新副本
+            Person copiedPerson = new Person(originalPerson);
+
+            // 输出两个对象的信息，检查它们是否相同
+            System.out.println("Original Person: " + originalPerson.name + 
+                            ", Address: " + originalPerson.address.city + 
+                            " " + originalPerson.address.street);
+
+            System.out.println("Copied Person: " + copiedPerson.name + 
+                            ", Address: " + copiedPerson.address.city + 
+                            " " + copiedPerson.address.street);
+
+            // 修改originalPerson的地址信息
+            originalPerson.address.street = "Broadway";
+
+            // 再次输出，检查copiedPerson的地址是否改变
+            System.out.println("After changing the original person's address:");
+            System.out.println("Original Person: " + originalPerson.name + 
+                            ", Address: " + originalPerson.address.city + 
+                            " " + originalPerson.address.street);
+
+            System.out.println("Copied Person: " + copiedPerson.name + 
+                            ", Address: " + copiedPerson.address.city + 
+                            " " + copiedPerson.address.street);
+        }
+    }
+    ```
+    在这个例子中，我们使用了Address类和Person类的拷贝构造函数，借此实现了深拷贝。因此，即使我们改变了originalPerson的address属性，copiedPerson的address属性也不会受到影响。
+    输出结果：
+    ```java
+    Original Person: John Doe, Address: New York 5th Ave
+    Copied Person: John Doe, Address: New York 5th Ave
+    After changing the original person's address:
+    Original Person: John Doe, Address: New York Broadway
+    Copied Person: John Doe, Address: New York 5th Ave
+    ```
+    - **拷贝工厂方法**:与拷贝构造函数类似，不过是以静态工厂方法的形式存在。
+    ```java
+    public class Example {
+       private int number;
+
+       public static Example newInstance(Example another) {
+           return new Example(another.number);
+       }
+
+       private Example(int number) {
+           this.number = number;
+       }
+    }
+    ```
+    - 序列化
+    通过序列化和反序列化来创建对象的深拷贝。这通常涉及将对象写入一个流中，然后再从流中读回来，但这也是一个非常昂贵的操作，仅适合复杂对象拷贝或者对象图拷贝。
+    ```java
+   public static Object deepCopy(Object object) {
+       try {
+           ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+           ObjectOutputStream outputStrm = new ObjectOutputStream(outputStream);
+           outputStrm.writeObject(object);
+           ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+           ObjectInputStream objInputStream = new ObjectInputStream(inputStream);
+           return objInputStream.readObject();
+       } catch (Exception e) {
+           e.printStackTrace();
+           return null;
+       }
+   }
+    ``` 
+    - Apache Commons Lang
+    `SerializationUtils.clone()`方法使用序列化来创建对象的拷贝，这要求被拷贝的对象实现`Serializable`接口。 
+    ```java
+   Example cloneExample = (Example) SerializationUtils.clone(originalExample);
+    ```
+    - Spring Framework
+    如果你正在使用Spring框架，可以使用`BeanUtils.copyProperties()`方法来拷贝同类之间的属性（它不会拷贝属性值为null的）。
+11.  **关键字**
+     1. **final**
+
+- final 关键字用于声明一个实体（变量、方法或类）是最终的，不能被修改。
+- **final变量**：一旦给final变量赋值后，就不能更改它的值。final修饰的变量效果上成为常量。
+    例：`final int MAX_VALUE = 10;`
+    - 对于基本类型，final 使数值不变；
+    - 对于引用类型，final 使引用不变，也就不能引用其它对象，但是被引用的对象本身是可以修改的。
+    ```java
+    final int x = 1;
+    // x = 2;  // cannot assign value to final variable 'x'
+    final A y = new A();
+    y.a = 1;
+    ```
+- **final方法**：这种方法不能在子类中重写。
+例：
+    ```java
+    public final void showFinalMethod() {
+        // 方法体
+    }
+    ``` 
+- **final类**：被声明为final的类不能被继承。
+例：`public final class MyFinalClass { ... }`
+
+- 使用final关键字可以让程序运行得更安全，因为它可以避免无意的赋值或继承导致的错误。同时，final 变量经常与不可变类搭配使用，以创建线程安全的常量。
+     
+     2. **static**
+
+- static 关键字用于声明独立于对象的类成员。即它可以创建类级别的变量和方法。
+- **静态变量（Static Variable）**：
+    - 静态变量: 又称为类变量，也就是说这个变量属于类的，类所有的实例都共享静态变量，可以直接通过类名来访问它；静态变量在内存中只存在一份。
+    - 实例变量: 每创建一个实例就会产生一个实例变量，它与该实例同生共死。
+    
+    ```java
+    public class A {
+        private int x;         // 实例变量
+        private static int y;  // 静态变量
+
+        public static void main(String[] args) {
+            // int x = A.x;  // Non-static field 'x' cannot be referenced from a static context
+            A a = new A();
+            int x = a.x;
+            int y = A.y;
+        }
+    }
+    ```
+
+- **静态方法（Static Method）**：
+    - 静态方法在类加载的时候就存在了，它不依赖于任何实例。所以静态方法必须有实现，也就是说它不能是抽象方法(abstract)。
+    ```java
+    public abstract class A {
+        public static void func1(){
+        }
+        // public abstract static void func2();  // Illegal combination of modifiers: 'abstract' and 'static'
+    }
+    ```
+    - 只能访问所属类的静态字段和静态方法，方法中不能有 this 和 super 关键字。
+    ```java
+    public class A {
+        private static int x;
+        private int y;
+
+        public static void func1(){
+            int a = x;
+            // int b = y;  // Non-static field 'y' cannot be referenced from a static context
+            // int b = this.y;     // 'A.this' cannot be referenced from a static context
+        }
+    }
+    ```
+- **静态语句块**
+  静态语句块在类初始化时运行一次，通常用于初始化变量。
+  ```java
+    public class A {
+        static {
+            System.out.println("123");
+        }
+
+        public static void main(String[] args) {
+            A a1 = new A();
+            A a2 = new A();
+        }
+    }
+    //123
+  ``` 
+- **静态内部类（Static Inner Class）**：它可以访问外部类的静态成员。
+   - 非静态内部类依赖于外部类的实例，而静态内部类不需要。
+    ```java
+    public class OuterClass {
+        class InnerClass {
+        }
+
+        static class StaticInnerClass {
+        }
+
+        public static void main(String[] args) {
+            // InnerClass innerClass = new InnerClass(); 
+            // 'OuterClass.this' cannot be referenced from a static context
+            OuterClass outerClass = new OuterClass();
+            InnerClass innerClass = outerClass.new InnerClass();
+            StaticInnerClass staticInnerClass = new StaticInnerClass();
+        }
+    }
+    ```
+- **静态导入（Static Import）**：允许导入类的静态成员而无需类前缀。
+    - 在使用静态变量和方法时不用再指明 ClassName，从而简化代码，但可读性大大降低。
+例：`import static java.lang.Math.*;`
+- **初始化顺序**：
+    - 静态变量和静态语句块优先于实例变量和普通语句块，静态变量和静态语句块的初始化顺序取决于它们在代码中的顺序。
+    ```java
+    public static String staticField = "静态变量";
+    ```
+    ```java
+    static {
+        System.out.println("静态语句块");
+    }
+    ```
+    ```java
+    public String field = "实例变量";
+    ```
+    ```java
+    {
+        System.out.println("普通语句块");
+    }
+    ```
+    ```java
+    public InitialOrderTest() {
+        System.out.println("构造函数");
+    }
+    ```
+    - 存在继承的情况下，初始化顺序为:
+
+        - 父类(静态变量、静态语句块)
+        - 子类(静态变量、静态语句块)
+        - 父类(实例变量、普通语句块)
+        - 父类(构造函数)
+        - 子类(实例变量、普通语句块)
+        - 子类(构造函数)
+- 静态成员是类的一部分，而不是单个实例的一部分。这意味着如果一个对象修改了一个静态变量，这个修改会影响到所有的实例。
+
+两者（static 和 final）也经常一起使用，例如在定义静态常量的时候，static final 一起使用能够创建全局常量。
+### 1.2面向对象
 
 1. **三大特性**
     1. **封装**
@@ -343,3 +830,20 @@
     ![](/Res/images/Java基础-面向对象-类图-依赖关系.png)
 
 ## 二、八股问题整理
+
+### (1).基本数据类型及其对应封装类
+### (2).自动装箱与拆箱
+### (3).类型转换
+### (4).object类中的常用方法
+### (5).hashcode()
+### (6).toString()
+### (7).equals()
+### (8).clone()
+### (9).浅拷贝与深拷贝
+### (10).面向对象三大特性
+### (11).访问修饰符
+### (12).抽象类和接口
+### (13).super关键字
+### (14).重载和重写
+### (15).关键字static
+### (16).关键字final
