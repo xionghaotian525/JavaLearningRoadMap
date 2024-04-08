@@ -18,6 +18,11 @@
         Integer x = 2;     // 装箱
         int y = x;         // 拆箱
         ```
+    3. 枚举类型
+    4. 引用类型
+       1. String
+       2. 数组、集合
+       3. 类、接口
 2. **变量和常量**
     1. 变量声明：指定变量类型并赋予名字
        - 示例：`int number;`
@@ -48,22 +53,22 @@
                 break;
         }
         ``` 
-    1. 循环语句：
+    2. 循环语句：
         **for**：一种有限次循环，通常知道循环次数时使用
         **while**：当某条件为真，执行循环体
         **do-while**：先执行循环体至少一次，然后检查条件
-    2. 控制转移语句：
+    3. 控制转移语句：
         **break**：退出循环或switch语句
         **continue**：跳过当前循环的剩余部分执行下一次循环
         **return**：退出当前方法
-1. **类型转换**
+5. **类型转换**
     1. 隐式类型转换：小类型自动转换到大类型，如int自动转换成double
     2. 显式类型转换（强制类型转换）：需要显示声明新类型，可能造成数据丢失
         - 示例：`int a = (int) 3.14;`
-2. **字符串处理**
+6. **字符串处理**（详细参考AdvancedFeatures）
     1. 字符串连接：使用+连接字符串
     2. 常用方法：length()、charAt()、substring()、indexOf()、toLowerCase()、toUpperCase()等
-3. **数组**
+7. **数组**
     1. 声明：指定元素类型及数组名
         - 示例：`int[] myArray;`
     2. 初始化：创建数组并分配空间，可以在声明时或之后进行
@@ -71,40 +76,40 @@
     3. 访问：使用索引访问数组元素
         - 示例：`myArray[0] = 50;`
     4. 多维数组：数组的数组，如二维数组
-4. **包（Packages）**
+8. **包（Packages）**
     1. 定义：将类组织在不同的命名空间里，便于管理
     2. 导入：使用import语句导入其他包的类
-5. **注释**
+9. **注释**
     1. 单行注释：//
     2. 多行注释：/* ... */
     3. 文档注释：/** ... */
-6. **Object通用方法**
-   1. 概览
-   ```java
-    public final native Class<?> getClass()
+10. **Object通用方法**
+    1. 概览
+    ```java
+        public final native Class<?> getClass()
 
-    public native int hashCode()
+        public native int hashCode()
 
-    public boolean equals(Object obj)
+        public boolean equals(Object obj)
 
-    protected native Object clone() throws CloneNotSupportedException
+        protected native Object clone() throws CloneNotSupportedException
 
-    public String toString()
+        public String toString()
 
-    public final native void notify()
+        public final native void notify()
 
-    public final native void notifyAll()
+        public final native void notifyAll()
 
-    public final native void wait(long timeout) throws InterruptedException
+        public final native void wait(long timeout) throws InterruptedException
 
-    public final void wait(long timeout, int nanos) throws InterruptedException
+        public final void wait(long timeout, int nanos) throws InterruptedException
 
-    public final void wait() throws InterruptedException
+        public final void wait() throws InterruptedException
 
-    protected void finalize() throws Throwable {}
+        protected void finalize() throws Throwable {}
 
-   ```
-   2. **equals()**
+    ```
+    2. **equals()**
 
 - 等价关系
     ```java
@@ -676,10 +681,54 @@
     Animal animal = new Cat();
     ```
 - 访问权限
+    
+    **访问修饰符** | **同一个类** | **同一个包** | **子类** | **任何地方**
+    ---|---|---|---|---|
+    public|Y|Y|Y|Y
+    protected|Y|Y|Y
+    default|Y|Y|
+    pravite|Y|
+
   - public
+    - public修饰符表示公开的，公共的。不同类、不同包下都可以访问
+
+    - 1个java文件中只可以有一个public修饰的类，并且类名需要和文件名相同
   - private
+    - 可用来修饰内部类、属性、方法
+
+    - “私有的”，即被private修饰的属性、方法、类**只能被该类的对象访问**，其子类不能访问，更不能允许跨包访问
+
+    - 注意：private可以修饰内部类，不可以修饰外部类
+    ```java
+    class test{//private不能修饰外部类
+        private String name;//private修饰属性
+        private void test(){//private修饰方法
+            System.out.println("private修饰方法");
+        }
+        private class innerClass{//private修饰内部类
+
+        }
+    }
+    ```
   - protected
-  - default
+    - protected修饰符表示受保护的，它主要的作用是保护子类，子类可以用它修饰的成员，其他的不可以
+
+    - protected修饰符可以被本类、同一个包中的类、不同包中的子类所访问到
+
+    - protected可以修饰属性、方法，但是不能修饰外部类，可以修饰内部类    
+    ```java
+    class test{//不能用protected修饰外部类
+        protected String name;//protected修饰属性
+        protected void demo(){//protected修饰方法
+            System.out.println("protected修饰方法");
+        }
+        protected class innerClass{//protected修饰内部类
+
+        }
+    }
+    ``` 
+  - default  包级可见 
+  
 - 抽象类与接口
   - 抽象类
     - 抽象类和抽象方法都使用 abstract 关键字进行声明。抽象类一般会包含抽象方法，抽象方法一定位于抽象类中。
@@ -753,7 +802,7 @@
         - 存在于同一个类中，指一个方法与已经存在的方法名称上相同，但是参数类型、个数、顺序至少有一个不同。
 
         - 应该注意的是，返回值不同，其它都相同不算是重载。
-    3. **多态**
+    1. **多态**
 
 - 多态分为编译时多态和运行时多态:
   - 编译时多态主要指方法的重载
@@ -832,9 +881,61 @@
 ## 二、八股问题整理
 
 ### (1).基本数据类型及其对应封装类
+Java中有8种基本数据类型，它们不是对象，为了能将这些基本数据类型当作对象操作，Java为每个基本数据类型都提供了对应的包装类。
+
+**基本数据类型** | **大小 (字节)** | **默认值** | **值域** | **封装类**
+---|---|---|---|---|
+byte | 1 | 0 | -128至127 | Byte
+short | 2 | 0 | -32768至32767 | Short
+int | 4 | 0 | `-2^31`至`2^31-1` | Integer
+long | 8 | 0L | `-2^63`至`2^63-1` |Long
+float | 4 | 0.0f | 它用于保存单精度、分数值等小数点可能变化的值。 |Float
+double | 8 | 0.0d | 提供比float更大的值域和精度。 |Double
+boolean | 1 bit | false | 通常是true或false |Boolean
+char | 2 | '\u0000' | 用于存储单个字符（如'A'或'9'） |Character
+
+**为什么要使用封装类？**
+
+* **对象化操作**: 封装类允许将基本数据类型作为对象处理，可以调用方法进行操作，例如类型转换、比较等。
+* **集合类**: Java的集合类，例如List、Map等，只能操作对象类型，不能直接存储基本数据类型。使用封装类可以将基本数据类型存储到集合中。
+* **空值**: 基本数据类型不能表示空值，而封装类可以表示空值，例如 `Integer i = null;`。
+* **实用方法**: 封装类提供了许多实用类方法，例如类型转换、进制转换、字符串处理等，方便开发者操作数据。
+
 ### (2).自动装箱与拆箱
+从Java 5开始，提供了自动装箱和拆箱的功能，可以方便地将基本数据类型和封装类进行转换。
+
+* **自动装箱**: 自动将基本数据类型转换为对应的封装类对象。例如：`Integer i = 10;` 等价于 `Integer i = Integer.valueOf(10);`
+* **自动拆箱**: 自动将封装类对象转换为对应的基本数据类型。例如：`int n = i;` 等价于 `int n = i.intValue();`
+
 ### (3).类型转换
+在Java中，类型转换是将一种数据类型的值转换为另一种数据类型的过程。类型转换主要分为两种：隐式类型转换和显式类型转换。
+
+1. 隐式类型转换（自动类型转换）：当一个数据类型的值赋给另一个数据类型的变量时，如果目标数据类型的范围大于源数据类型的范围，Java会自动进行隐式类型转换。例如，将一个整数赋给一个浮点数类型的变量，或者将一个小范围的整数类型赋给一个大范围的整数类型变量。
+
+```java
+int numInt = 10;
+double numDouble = numInt; // 隐式类型转换，将int类型转换为double类型
+```
+
+2. 显式类型转换（强制类型转换）：当目标数据类型的范围小于源数据类型的范围时，需要使用显式类型转换来将数据类型转换为目标类型。这种转换在编码时需要显式地指定，并且需要使用强制类型转换操作符`(目标数据类型)`。
+
+```java
+double numDouble = 10.5;
+int numInt = (int) numDouble; // 显式类型转换，将double类型转换为int类型
+```
+
+显式类型转换可能会导致数据丢失或溢出
 ### (4).object类中的常用方法
+![](/Res/images/object类常用方法.png)
+**clone():**
+保护方法，实现对象的浅复制，只有实现了 Cloneable 接口才可以调用该方法，否则抛出
+CloneNotSupportedException 异常，深拷贝也需要实现 Cloneable，同时其成员变量为引用类型的也需要实现 Cloneable，然后重写 clone 方法。
+finalize():
+该方法和垃圾收集器有关系，判断一个对象是否可以被回收的最后一步就是判断是否重写了此方法。
+equals():
+hashcode():
+toString():
+wait()、notify()、notifyAll():
 ### (5).hashcode()
 ### (6).toString()
 ### (7).equals()
@@ -847,3 +948,4 @@
 ### (14).重载和重写
 ### (15).关键字static
 ### (16).关键字final
+### (17).类的初始化顺序
