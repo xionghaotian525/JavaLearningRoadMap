@@ -1184,4 +1184,216 @@ class Solution {
         }
     }
     ```
-## 2024/4/8
+## 2024/4/9
+
+### 416.分割等和子集
+
+1. **动态规划**
+    动态规划是解决这个问题的常用方法，可以根据数组元素生成一个和为总和一半的子集来考虑。步骤如下：
+   - 首先计算数组的总和，如果总和是奇数，那么不可能划分成两个和相等的子集，直接返回`false`。
+   - 如果总和是偶数，我们的任务就变成了找一个子集，其和为总和的一半。
+   - 创建一个布尔数组`dp`，其中`dp[j]`表示是否存在一个子集的和为`j`。初始化`dp[0]`为`true`，因为不取任何元素时和为0肯定是可以实现的。
+   - 遍历数组，对于每个元素，逆序更新`dp`数组：从`sum/2`遍历到当前元素大小，这是为了保证每个元素只被使用一次。如果`dp[j]`之前已经为`true`，或者在没有包括当前元素的情况下，`dp[j - 当前元素的值]`为`true`，那么在加上当前元素后，`dp[j]`应标记为`true`。
+   - 最后，如果`dp[sum/2]`是`true`，那么返回`true`，否则返回`false`。
+   ```java
+    class Solution {
+        public boolean canPartition(int[] nums) {
+            int sum = 0;
+            for (int num : nums) {
+                sum += num;
+            }
+            // 如果总和是奇数，不能分割成两个和相等的子集
+            if ((sum & 1) == 1) {
+                return false;
+            }
+
+            sum /= 2;
+            boolean[] dp = new boolean[sum + 1];
+            dp[0] = true;
+
+            for (int num : nums) {
+                // 从sum遍历到num，防止重复使用元素
+                for (int i = sum; i >= num; i--) {
+                    // 转移方程
+                    dp[i] = dp[i] || dp[i - num];
+                }
+            }
+
+            return dp[sum];
+        }
+    }
+   ``` 
+1. **回溯(超时)**
+
+    回溯法也可以解决此问题，通过尝试所有可能的分割方式来找到答案。
+   - 考虑数组中的每一个数字，我们有两种选择：将其放入子集1，或者子集2。
+   - 我们从第一个数字开始，递归地尝试两种可能性。如果在任何点子集1的和等于子集2的和，我们找到了答案。
+   - 如果我们到达列表的末尾而没有找到答案，则返回false。
+
+    注意：回溯法在大数组中可能会因为时间复杂度是指数级的而变得不实际。
+
+    - 首先计算数组元素的总和。
+    - 判断总和是否为偶数，因为只有总和为偶数，才可能划分为两个和相等的数组。
+    - `canPartitionFrom` 是递归函数，它尝试添加数组中的元素到当前子集的和中或不添加，然后看看是否能够达到和为总和一半的情况。
+    - 如果当前和等于总和的一半，说明找到了一个子集的和为总和的一半，返回`true`。
+    - 如果当前和大于总和的一半或者所有元素都使用完成，而没有找到解决方案，则返回`false`。
+    - 回溯通过尝试在子集中包括当前元素或排除当前元素，递归的进行下一个元素直至达到目标和或确定无法分割为等和子集。
+
+    ```java
+    class Solution {
+        public boolean canPartition(int[] nums) {
+            int total = 0;
+
+            // 计算数组的总和
+            for (int num : nums) {
+                total += num;
+            }
+            
+            // 如果总和不是偶数，则不能平分
+            if (total % 2 != 0) {
+                return false;
+            }
+
+            // 使用回溯法找到解
+            return canPartitionFrom(0, nums, 0, total);
+        }
+        
+        private boolean canPartitionFrom(int index, int[] nums, int currentSum, int total) {
+            // 如果当前计算和的两倍等于总和，表示找到了平分的两个子集
+            if (currentSum * 2 == total) {
+                return true;
+            }
+
+            // 如果当前和超过了总和的一半或者下标超出数组长度，返回false
+            if (currentSum > total / 2 || index >= nums.length) {
+                return false;
+            }
+
+            // 选择当前数字，或者不选择当前数字，尝试递归找到答案
+            return canPartitionFrom(index + 1, nums, currentSum + nums[index], total) ||
+                canPartitionFrom(index + 1, nums, currentSum, total);
+        }
+    }
+    ```
+3. **二进制表示(超时)**
+
+    另一个有趣的方法是使用整数的二进制表示来判断子集。每个数字可以选择“在子集中”（1）或“不在子集中”（0）。通过生成所有可能的二进制组合和相应的子集，我们可以检查是否存在一个子集其和为总和的一半。
+
+    这种方法也会遇到时间复杂度和空间复杂度的问题，因为可能的子集数量是指数级的。
+
+    ```java
+    class Solution {
+        public boolean canPartition(int[] nums) {
+            int sum = 0;
+
+            for (int num : nums) {
+                sum += num;
+            }
+
+            // 数组总和必须是偶数，才可能分割成两个和相等的子集
+            if (sum % 2 != 0) {
+                return false;
+            }
+
+            int halfSum = sum / 2;
+            int n = nums.length;
+
+            // 穷举所有可能的组合
+            for (int i = 1; i < (1 << n); i++) {
+                int subsetSum = 0;
+
+                for (int j = 0; j < n; j++) {
+                    // 如果数字j在组合中，累加当前数字
+                    if ((i & (1 << j)) != 0) {
+                        subsetSum += nums[j];
+                    }
+                }
+
+                // 检查当前组合的和是否等于总和的一半
+                if (subsetSum == halfSum) {
+                    return true;
+                }
+            }
+
+            // 如果没有找到和为halfSum的子集，返回false
+            return false;
+        }
+    }
+    ```
+4. **记忆化搜索(超时)**
+
+    这是动态规划和回溯的组合，有时被称为记忆化递归。我们对每个元素使用递归，但是将中间结果缓存下来，避免重复计算，这样可以提高效率。
+
+    - `Map<Pair, Boolean> memo`是一个`HashMap`，使用自定义的`Pair`类做键，其中`Pair`类包含了索引`int index`和当前的和`int sum`。
+    - `canPartition`函数在每次递归调用时，会创建一个新的`Pair`实例作为状态的键，查找memo哈希表中是否有对应的值。
+    - `Pair`类需要合适地实现`equals()`和`hashCode()`方法，确保`HashMap`可以正确地根据键的等价性存储和检索值。
+
+    ```java
+    import java.util.HashMap;
+    import java.util.Map;
+    import java.util.Objects;
+
+    public class Solution {
+        private Map<Pair, Boolean> memo = new HashMap<>();
+
+        public boolean canPartition(int[] nums) {
+            int sum = 0;
+            for (int num : nums) {
+                sum += num;
+            }
+
+            if (sum % 2 != 0) {
+                return false;
+            }
+
+            return canPartition(nums, 0, sum / 2);
+        }
+
+        private boolean canPartition(int[] nums, int index, int currentSum) {
+            if (currentSum == 0) {
+                return true;
+            }
+
+            if (index >= nums.length || currentSum < 0) {
+                return false;
+            }
+
+            Pair key = new Pair(index, currentSum);
+
+            if (memo.containsKey(key)) {
+                return memo.get(key);
+            }
+
+            boolean result = canPartition(nums, index + 1, currentSum - nums[index]) || 
+                            canPartition(nums, index + 1, currentSum);
+            memo.put(key, result);
+
+            return result;
+        }
+
+        // 定义私有类来作为哈希表的键
+        private static class Pair {
+            int index;
+            int sum;
+            
+            Pair(int index, int sum) {
+                this.index = index;
+                this.sum = sum;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Pair pair = (Pair) o;
+                return index == pair.index && sum == pair.sum;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(index, sum);
+            }
+        }
+    }
+    ```
+## 
