@@ -1396,4 +1396,69 @@ class Solution {
         }
     }
     ```
-## 
+## 2024/4/10
+
+### 199.二叉树的右视图
+
+1. **BFS**
+- `rightSideView` 方法将返回一个包含二叉树右视图的整数列表。
+- 我们首先检查根节点是否为`null`。如果是，就返回一个空列表。
+- 接着，我们创建一个队列来进行层序遍历，并将根节点加入队列中。
+- 然后，当队列不为空时，我们遍历每一层，对于每一层中的节点，我们从左- 到右进行遍历。但是，我们只添加每层最后一个节点的值到视图列表中，因为按照层序逻辑，每层的最后一个节点在其视图中是可见的。
+- 在内部循环中，如果节点有左子节点和右子节点，我们先将左子节点加入队列，然后加入右子节点。这确保了在每一层遍历时，右子节点是最后处理的。
+
+```java
+public class Solution {
+    public List<Integer> rightSideView(TreeNode root) {
+        List<Integer> view = new ArrayList<>();
+        if (root == null) {
+            return view;
+        }
+
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+
+        while (!queue.isEmpty()) {
+            int levelLength = queue.size();
+            for (int i = 0; i < levelLength; ++i) {
+                TreeNode currentNode = queue.poll();
+                // 如果是当前层的右侧节点，则加入视图列表中
+                if (i == levelLength - 1) {
+                    view.add(currentNode.val);
+                }
+                // 将子节点加入队列中。先左后右可以确保右侧节点最后处理
+                if (currentNode.left != null) queue.offer(currentNode.left);
+                if (currentNode.right != null) queue.offer(currentNode.right);
+            }
+        }
+
+        return view;
+    }
+}
+```
+2. **DFS**
+
+```java
+class Solution {
+    List<Integer> rightSideView(TreeNode root) {
+        List<Integer> result = new ArrayList<>();
+        rightView(root, result, 0);
+        return result;
+    }
+
+    private void rightView(TreeNode curr, List<Integer> result, int currDepth){
+        if (curr == null) {
+            return;
+        }
+        // 如果当前层次还没有节点加入到结果中，添加当前节点
+        if (currDepth == result.size()) {
+            result.add(curr.val);
+        }
+        // 首先访问右子节点，然后访问左子节点
+        rightView(curr.right, result, currDepth + 1);
+        rightView(curr.left, result, currDepth + 1);
+    }
+}
+```
+## 2024/4/11
+### 437.路径总和III
