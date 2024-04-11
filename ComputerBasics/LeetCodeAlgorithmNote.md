@@ -1462,3 +1462,91 @@ class Solution {
 ```
 ## 2024/4/11
 ### 437.路径总和III
+**题目描述**：
+给定一个二叉树的根节点 `root` ，和一个整数 `targetSum` ，求该二叉树里节点值之和等于 `targetSum` 的 **路径** 的数目。
+
+**路径** 不需要从根节点开始，也不需要在叶子节点结束，但是路径方向必须是向下的（只能从父节点到子节点）。
+
+1. **双重递归**
+第一个递归用来遍历这些节点，第二个递归用来处理这些节点，进行深度优先搜索。
+```java
+class Solution {
+    int count=0;
+    public int pathSum(TreeNode root, int targetSum) {
+        if(root==null) return 0;
+        dfs(root,targetSum);
+        pathSum(root.left,targetSum);
+        pathSum(root.right,targetSum);
+        return count;
+    }
+    void dfs(TreeNode root,int targetSum){
+        if(root==null) return;
+        if(targetSum-root.val == 0) count++;
+        dfs(root.left,targetSum-root.val);
+        dfs(root.right,targetSum-root.val);
+    }
+}
+```
+未通过测试用例：
+```java
+[1000000000,1000000000,null,294967296,null,1000000000,null,1000000000,null,1000000000]
+```
+修改：
+```java
+class Solution {
+    int count = 0;
+
+    public int pathSum(TreeNode root, long targetSum) { // 注意这里和下面所有使用到的targetSum的地方都改为long类型
+        if (root == null) return 0;
+        dfs(root, targetSum);
+        pathSum(root.left, targetSum);
+        pathSum(root.right, targetSum);
+        return count;
+    }
+
+    void dfs(TreeNode root, long targetSum) { // 修改为long类型以防溢出
+        if (root == null) return;
+        if (targetSum - root.val == 0) count++;
+        dfs(root.left, targetSum - root.val);
+        dfs(root.right, targetSum - root.val);
+    }
+}
+
+```
+2. **前缀和**
+```java
+class Solution {
+    // key：从根节点到某一节点的路径和 value：路径和为key的路径数目
+    private Map<Integer,Integer> prefixSumCount;
+    private int target;
+    public int pathSum(TreeNode root, int sum) {
+        prefixSumCount = new HashMap<>();
+        // curPathSum-target为0说明当前路径和就是target，找的了一条符合要求的路径
+        prefixSumCount.put(0,1);
+        this.target = sum;
+        return dfs(root,0);
+    }
+    private int dfs(TreeNode root,int preSum){
+        if(root == null){
+            return 0;
+        }
+        int curPathSum = preSum + root.val;
+        int curRes = 0;
+        // 如果在前缀路径和中发现有值为curPathSum-target的（可能会>1，即多条前缀路径）
+        // 那么路径和为curPathSum的路径的最后一个节点的下一个节点到当前节点的和等于targe（画个图就知道了）
+        //          root->  o 10               prefixSumCount有 10:1 15:1
+        //                  |                     curPathSum  为  18
+        //                  o 5              curPathSum-target 为 18-8 = 10 
+        //                 /              因此路径和为10的路径的最后一个节点（10）的下一个节
+        //       cur->    o 3             点（5）到cur（3）为一条满足和为target（8）的路径  
+        curRes += prefixSumCount.getOrDefault(curPathSum-target,0);
+        // 进入左右子树前，先把 本路径的和 的计数器更新（+1）（这个路径会是左右子树的前缀）
+        prefixSumCount.put(curPathSum,prefixSumCount.getOrDefault(curPathSum,0)+1);
+        curRes += dfs(root.left,curPathSum);
+        curRes += dfs(root.right,curPathSum);
+        // 左右子树遍历完后，把 本路径的和 的计数器更新（-1）（因为这个路径不可能是别的路径的前缀了）
+        prefixSumCount.replace(curPathSum,prefixSumCount.get(curPathSum)-1);
+        return curRes;
+    }
+}
+```
