@@ -1285,7 +1285,42 @@ PriorityQueue的底层数据结构是堆，具体是**完全二叉树(complete b
 ![](/Res/images/集合框架-Iterator工作机制.png)
 #### 1.1.3 Map
 1. **HashMap**
-2. **TreeMap**
+- 概述
+`HashMap`实现了`Map`接口，即允许放入`key`为`null`的元素，也允许插入`value`为`null`的元素；除该类**未实现同步**外，其余跟`Hashtable`大致相同；跟`TreeMap`不同，该容器不保证元素顺序，根据需要该容器可能会对元素重新哈希，元素的顺序也会被重新打散，因此不同时间迭代同一个HashMap的顺序可能会不同。 根据**对冲突的处理方式**不同，哈希表有两种实现方式，一种**开放地址方式**(Open addressing)，另一种是**冲突链表方式**(Separate chaining with linked lists)。**Java7 HashMap采用的是冲突链表方式。**
+![](/Res/images/集合框架-Map-HashMap概述.png)
+  - 从上图容易看出，如果选择合适的哈希函数，put()和get()方法可以在常数时间内完成。但在对HashMap进行迭代时，需要遍历整个table以及后面跟的冲突链表。**因此对于迭代比较频繁的场景，不宜将HashMap的初始大小设的过大**。
+  - 有两个参数可以影响HashMap的性能: **初始容量(inital capacity)**和**负载系数(load factor)**。**初始容量指定了初始table的大小**，**负载系数用来指定自动扩容的临界值**。当entry的数量超过`capacity*load_factor`时，容器将**自动扩容**并重新哈希。对于**插入元素较多的场景**，将**初始容量设大**可以减少重新哈希的次数。
+  - 将对象放入到HashMap或HashSet中时，有两个方法需要特别关心: `hashCode()`和`equals()`。hashCode()方法决定了对象会被放到哪个bucket里，当多个对象的哈希值冲突时，equals()方法决定了这些对象是否是“同一个对象”。所以，如果要将自定义的对象放入到HashMap或HashSet中，需要 **@Override** hashCode()和equals()方法。
+- java7方法详解
+  - get()
+    `get(Object key)`方法根据指定的`key`值返回对应的`value`，该方法调用了`getEntry(Object key)`得到相应的`entry`，然后返回`entry.getValue()`。因此`getEntry()`是算法的核心。 算法思想是首先通过`hash()`函数得到对应bucket的下标，然后依次遍历冲突链表，通过`key.equals(k)`方法来判断是否是要找的那个entry。
+    ![](/Res/images/集合框架-Map-HashMap-Java7-get().png)
+    上图中`hash(k)&(table.length-1)`等价于`hash(k)%table.length`，原因是HashMap要求`table.length`必须是**2的指数**，因此`table.length-1`就是二进制低位全是1，跟hash(k)相与会将哈希值的高位全抹掉，剩下的就是余数了。
+    ```java
+    //getEntry()方法
+    final Entry<K,V> getEntry(Object key) {
+        ......
+        int hash = (key == null) ? 0 : hash(key);
+        for (Entry<K,V> e = table[hash&(table.length-1)];//得到冲突链表
+            e != null; e = e.next) {//依次遍历冲突链表中的每个entry
+            Object k;
+            //依据equals()方法判断是否相等
+            if (e.hash == hash &&
+                ((k = e.key) == key || (key != null && key.equals(k))))
+                return e;
+        }
+        return null;
+    }
+    ```
+  - put()
+    ![](/Res/images/集合框架-Map-HashMap-Java7-put().png)
+  - remove
+    ![](/Res/images/集合框架-Map-HashMap-Java7-remove().png)
+- java8方法详解
+    ![](/Res/images/集合框架-Map-HashMap-Java8概述.png)
+
+1. **TreeMap**
+2. **LinkedHashMap**
 3. **HashTable**
 4. **LinkedHashMap**
 
