@@ -7,7 +7,8 @@
 ![](/Res/images/集合接口继承关系和实现.png)
 
 #### 1.1.1 Collection
-![](/Res/images/集合框架-概述.png)
+![](/Res/images/集合框架-Collection-Hierarchy.png)
+![](/Res/images/集合框架-Collection层次结构图.png)
 1. **List**
 
     1. **==ArrayList==**
@@ -1132,26 +1133,30 @@ LinkedHashSet的底层数据是**哈希表**+**双向链表**
     * `retainAll(Collection c)`: 从 LinkedHashSet 中删除所有未包含在指定集合中的元素。
 
 3. **Queue**
+![](/Res/images/集合框架-Collection-Queue层次结构图.png)
+
 - Java里有一个叫做Stack的类，却没有叫做Queue的类(它是个接口名字)。当需要使用栈时，Java已不推荐使用`Stack`，而是推荐使用更高效的`ArrayDeque`；既然Queue只是一个接口，当需要使用队列时也就首选`ArrayDeque`了(次选是`LinkedList`)。
 - `Deque`是"double ended queue", 表示双向的队列。 Deque 继承自 Queue接口，除了支持Queue的方法之外，还支持insert, remove和examine操作，由于Deque是双向的，所以可以对队列的头和尾都进行操作。Deque既可以当做栈使用，也可以当做队列、双端队列使用。
+![](/Res/images/集合框架-Collection-Queue-Deque层次结构图.png)
 - `ArrayDeque`和`LinkedList`是`Deque`的两个通用实现，官方更推荐使用`AarryDeque`用作栈和队列，本节总结ArrayDeque
     
     1. **==ArrayDeque==**
+![](/Res/images/集合框架-Collection-Queue-ArrayDeque层次结构图.png)
 - ArrayDeque概述
 从名字可以看出ArrayDeque底层通过数组实现，为了满足可以同时在数组两端插入或删除元素的需求，该数组还必须是循环的，即**循环数组(circular array)**，也就是说数组的任何一点都可能被看作起点或者终点。ArrayDeque是**非线程安全**的(not thread-safe)，当多个线程同时使用的时候，需要程序员手动同步；另外，**该容器不允许放入null元素**。
 ![](/Res/images/集合框架-Collection-Queue-ArrayDeque概述.png)
 上图中我们看到，`head`指向首端第一个有效元素，`tail`指向尾端第一个可以插入元素的空位。因为是循环数组，所以`head`不一定总等于0，`tail`也不一定总是比`head`大。
-- ArrayQueue常用方法
+- ArrayDeque常用方法
   - addFirst()
   - addLast()
   - pollFirst()
   - pollLast()
   - peekFirst()
   - peekLast()
-- 无语了！有时间再总结
+- 总结
 
-    1. **==PriorityQueue==**
-
+    2. **==PriorityQueue==**
+![](/Res/images/集合框架-Collection-Queue-PriorityQueue层次结构图.png)
 - **概述**
 ![](/Res/images/集合框架-Collection-Queue-PriorityQueue概述.png)
   - 前面以Java ArrayDeque为例讲解了Stack和Queue，其实还有一种特殊的队列叫做`PriorityQueue`，即优先队列。**优先队列的作用是能保证每次取出的元素都是队列中权值最小的**(Java的优先队列每次取最小元素，C++的优先队列每次取最大元素)。这里牵涉到了大小关系，元素大小的评判可以通过元素本身的自然顺序(natural ordering)，也可以通过构造时传入的比较器(Comparator，类似于C++的仿函数)。
@@ -1284,7 +1289,9 @@ PriorityQueue的底层数据结构是堆，具体是**完全二叉树(complete b
 #### 1.1.2 Iterator
 ![](/Res/images/集合框架-Iterator工作机制.png)
 #### 1.1.3 Map
+![](/Res/images/集合框架-Map-Hierarchy.png)
 1. **HashMap**
+![](/Res/images/集合框架-Map-HashMap-index&node&key&value.png)
 - 概述
 `HashMap`实现了`Map`接口，即允许放入`key`为`null`的元素，也允许插入`value`为`null`的元素；除该类**未实现同步**外，其余跟`Hashtable`大致相同；跟`TreeMap`不同，该容器不保证元素顺序，根据需要该容器可能会对元素重新哈希，元素的顺序也会被重新打散，因此不同时间迭代同一个HashMap的顺序可能会不同。 根据**对冲突的处理方式**不同，哈希表有两种实现方式，一种**开放地址方式**(Open addressing)，另一种是**冲突链表方式**(Separate chaining with linked lists)。**Java7 HashMap采用的是冲突链表方式。**
 ![](/Res/images/集合框架-Map-HashMap概述.png)
@@ -1292,7 +1299,7 @@ PriorityQueue的底层数据结构是堆，具体是**完全二叉树(complete b
   - 有两个参数可以影响HashMap的性能: **初始容量(inital capacity)**和**负载系数(load factor)**。**初始容量指定了初始table的大小**，**负载系数用来指定自动扩容的临界值**。当entry的数量超过`capacity*load_factor`时，容器将**自动扩容**并重新哈希。对于**插入元素较多的场景**，将**初始容量设大**可以减少重新哈希的次数。
   - 将对象放入到HashMap或HashSet中时，有两个方法需要特别关心: `hashCode()`和`equals()`。hashCode()方法决定了对象会被放到哪个bucket里，当多个对象的哈希值冲突时，equals()方法决定了这些对象是否是“同一个对象”。所以，如果要将自定义的对象放入到HashMap或HashSet中，需要 **@Override** hashCode()和equals()方法。
 - java7方法详解
-  - get()
+  - **get()**
     `get(Object key)`方法根据指定的`key`值返回对应的`value`，该方法调用了`getEntry(Object key)`得到相应的`entry`，然后返回`entry.getValue()`。因此`getEntry()`是算法的核心。 算法思想是首先通过`hash()`函数得到对应bucket的下标，然后依次遍历冲突链表，通过`key.equals(k)`方法来判断是否是要找的那个entry。
     ![](/Res/images/集合框架-Map-HashMap-Java7-get().png)
     上图中`hash(k)&(table.length-1)`等价于`hash(k)%table.length`，原因是HashMap要求`table.length`必须是**2的指数**，因此`table.length-1`就是二进制低位全是1，跟hash(k)相与会将哈希值的高位全抹掉，剩下的就是余数了。
@@ -1312,23 +1319,221 @@ PriorityQueue的底层数据结构是堆，具体是**完全二叉树(complete b
         return null;
     }
     ```
-  - put()
+  - **put()**
     ![](/Res/images/集合框架-Map-HashMap-Java7-put().png)
-  - remove
+  - **remove**
     ![](/Res/images/集合框架-Map-HashMap-Java7-remove().png)
 - java8方法详解
+    Java8 对 HashMap 进行了一些修改，最大的不同就是利用了**红黑树**，所以其由 **数组+链表+红黑树** 组成。根据 Java7 HashMap 的介绍，我们知道，查找的时候，根据 hash 值我们能够快速定位到数组的具体下标，但是之后的话，需要顺着链表一个个比较下去才能找到我们需要的，时间复杂度取决于链表的长度，为 O(n)。为了降低这部分的开销，在 Java8 中，**当链表中的元素达到了 8 个时**，会**将链表转换为红黑树**，在这些位置进行查找的时候可以降低时间复杂度为 O(logN)。
     ![](/Res/images/集合框架-Map-HashMap-Java8概述.png)
+    Java7 中使用 `Entry` 来代表每个 HashMap 中的数据节点，Java8 中使用 `Node`，基本没有区别，都是 `key`，`value`，`hash` 和 `next` 这四个属性，不过，**Node 只能用于链表的情况，红黑树的情况需要使用 TreeNode**。
+    - put过程分析
+    ```java
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
 
-1. **TreeMap**
-2. **LinkedHashMap**
-3. **HashTable**
-4. **LinkedHashMap**
+    // 第四个参数 onlyIfAbsent 如果是 true，那么只有在不存在该 key 时才会进行 put 操作
+    // 第五个参数 evict 我们这里不关心
+    final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                boolean evict) {
+        Node<K,V>[] tab; Node<K,V> p; int n, i;
+        // 第一次 put 值的时候，会触发下面的 resize()，类似 java7 的第一次 put 也要初始化数组长度
+        // 第一次 resize 和后续的扩容有些不一样，因为这次是数组从 null 初始化到默认的 16 或自定义的初始容量
+        if ((tab = table) == null || (n = tab.length) == 0)
+            n = (tab = resize()).length;
+        // 找到具体的数组下标，如果此位置没有值，那么直接初始化一下 Node 并放置在这个位置就可以了
+        if ((p = tab[i = (n - 1) & hash]) == null)
+            tab[i] = newNode(hash, key, value, null);
 
+        else {// 数组该位置有数据
+            Node<K,V> e; K k;
+            // 首先，判断该位置的第一个数据和我们要插入的数据，key 是不是"相等"，如果是，取出这个节点
+            if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+                e = p;
+            // 如果该节点是代表红黑树的节点，调用红黑树的插值方法，本文不展开说红黑树
+            else if (p instanceof TreeNode)
+                e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+            else {
+                // 到这里，说明数组该位置上是一个链表
+                for (int binCount = 0; ; ++binCount) {
+                    // 插入到链表的最后面(Java7 是插入到链表的最前面)
+                    if ((e = p.next) == null) {
+                        p.next = newNode(hash, key, value, null);
+                        // TREEIFY_THRESHOLD 为 8，所以，如果新插入的值是链表中的第 8 个
+                        // 会触发下面的 treeifyBin，也就是将链表转换为红黑树
+                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                            treeifyBin(tab, hash);
+                        break;
+                    }
+                    // 如果在该链表中找到了"相等"的 key(== 或 equals)
+                    if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                        // 此时 break，那么 e 为链表中[与要插入的新值的 key "相等"]的 node
+                        break;
+                    p = e;
+                }
+            }
+            // e!=null 说明存在旧值的key与要插入的key"相等"
+            // 对于我们分析的put操作，下面这个 if 其实就是进行 "值覆盖"，然后返回旧值
+            if (e != null) {
+                V oldValue = e.value;
+                if (!onlyIfAbsent || oldValue == null)
+                    e.value = value;
+                afterNodeAccess(e);
+                return oldValue;
+            }
+        }
+        ++modCount;
+        // 如果 HashMap 由于新插入这个值导致 size 已经超过了阈值，需要进行扩容
+        if (++size > threshold)
+            resize();
+        afterNodeInsertion(evict);
+        return null;
+    }
+    ``` 
+    Java7 是先扩容后插入新值的，Java8 先插值再扩容
+    - 数组扩容
+    
+    `resize()` 方法用于初始化数组或数组扩容，每次扩容后，**容量为原来的 2 倍**，并进行数据迁移。
+    ```java
+    final Node<K,V>[] resize() {
+        Node<K,V>[] oldTab = table;
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        int oldThr = threshold;
+        int newCap, newThr = 0;
+        if (oldCap > 0) { // 对应数组扩容
+            if (oldCap >= MAXIMUM_CAPACITY) {
+                threshold = Integer.MAX_VALUE;
+                return oldTab;
+            }
+            // 将数组大小扩大一倍
+            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                    oldCap >= DEFAULT_INITIAL_CAPACITY)
+                // 将阈值扩大一倍
+                newThr = oldThr << 1; // double threshold
+        }
+        else if (oldThr > 0) // 对应使用 new HashMap(int initialCapacity) 初始化后，第一次 put 的时候
+            newCap = oldThr;
+        else {// 对应使用 new HashMap() 初始化后，第一次 put 的时候
+            newCap = DEFAULT_INITIAL_CAPACITY;
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+
+        if (newThr == 0) {
+            float ft = (float)newCap * loadFactor;
+            newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                    (int)ft : Integer.MAX_VALUE);
+        }
+        threshold = newThr;
+
+        // 用新的数组大小初始化新的数组
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+        table = newTab; // 如果是初始化数组，到这里就结束了，返回 newTab 即可
+
+        if (oldTab != null) {
+            // 开始遍历原数组，进行数据迁移。
+            for (int j = 0; j < oldCap; ++j) {
+                Node<K,V> e;
+                if ((e = oldTab[j]) != null) {
+                    oldTab[j] = null;
+                    // 如果该数组位置上只有单个元素，那就简单了，简单迁移这个元素就可以了
+                    if (e.next == null)
+                        newTab[e.hash & (newCap - 1)] = e;
+                    // 如果是红黑树，具体我们就不展开了
+                    else if (e instanceof TreeNode)
+                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                    else { 
+                        // 这块是处理链表的情况，
+                        // 需要将此链表拆成两个链表，放到新的数组中，并且保留原来的先后顺序
+                        // loHead、loTail 对应一条链表，hiHead、hiTail 对应另一条链表，代码还是比较简单的
+                        Node<K,V> loHead = null, loTail = null;
+                        Node<K,V> hiHead = null, hiTail = null;
+                        Node<K,V> next;
+                        do {
+                            next = e.next;
+                            if ((e.hash & oldCap) == 0) {
+                                if (loTail == null)
+                                    loHead = e;
+                                else
+                                    loTail.next = e;
+                                loTail = e;
+                            }
+                            else {
+                                if (hiTail == null)
+                                    hiHead = e;
+                                else
+                                    hiTail.next = e;
+                                hiTail = e;
+                            }
+                        } while ((e = next) != null);
+                        if (loTail != null) {
+                            loTail.next = null;
+                            // 第一条链表
+                            newTab[j] = loHead;
+                        }
+                        if (hiTail != null) {
+                            hiTail.next = null;
+                            // 第二条链表的新的位置是 j + oldCap，这个很好理解
+                            newTab[j + oldCap] = hiHead;
+                        }
+                    }
+                }
+            }
+        }
+        return newTab;
+    }
+    ```
+    - get过程分析 
+        - 计算 key 的 hash 值，根据 hash 值找到对应数组下标: `hash & (length-1)`
+        - 判断数组该位置处的元素是否刚好就是我们要找的，如果不是，走第三步
+        - 判断该元素类型是否是 TreeNode，如果是，用红黑树的方法取数据，如果不是，走第四步
+        - 遍历链表，直到找到相等(==或equals)的 key
+    ```java
+    public V get(Object key) {
+        Node<K,V> e;
+        return (e = getNode(hash(key), key)) == null ? null : e.value;
+    }
+    final Node<K,V> getNode(int hash, Object key) {
+        Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
+        if ((tab = table) != null && (n = tab.length) > 0 &&
+            (first = tab[(n - 1) & hash]) != null) {
+            // 判断第一个节点是不是就是需要的
+            if (first.hash == hash && // always check first node
+                ((k = first.key) == key || (key != null && key.equals(k))))
+                return first;
+            if ((e = first.next) != null) {
+                // 判断是否是红黑树
+                if (first instanceof TreeNode)
+                    return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+
+                // 链表遍历
+                do {
+                    if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                        return e;
+                } while ((e = e.next) != null);
+            }
+        }
+        return null;
+    }
+    ```
+2. **TreeMap**
+![](/Res/images/集合框架-Map-TreeMap层次结构图.png)
+3. **LinkedHashMap**
+![](/Res/images/集合框架-Map-LinkedHashMap层次结构图.png)
+4. **HashTable**
+![](/Res/images/集合框架-Map-HashTable层次结构图.png)
+#### 1.1.4 Collections工具类
+1. `Shuffle(element)`，洗牌方法，将当前集合内的数据进行随机排序。
+2. `Reverse(element)`，逆序排序，对当前集合的元素按照相反的顺序进行排序
+3. `sort(element)`，对当前集合进行升序排序,实现`Comparable`接口的类，只能使用一种排序方案，这种方案叫作“自然比较”方案。
 ### 1.2 IO
 ![](/Res/images/JavaIO包.png)
 ![](/Res/images/JavaNIO包.png)
 ### 1.3 异常处理
-![](/Res/images/)
+![](/Res/images/Exceptions包结构.png)
 ### 1.4 反射
 ### 1.5 泛型
 1. **泛型概述**
@@ -1453,6 +1658,11 @@ PriorityQueue的底层数据结构是堆，具体是**完全二叉树(complete b
 #### (37)HashMap 的长度为什么是 2 的 N 次方呢？
 #### (38)HashMap 与 ConcurrentHashMap 的异同
 #### (39)红黑树的特征
+- 性质1：节点是红色或黑色。
+- 性质2：根节点是黑色。
+- 性质3：每个红色节点的两个子节点都是黑色。(从每个叶子到根的所有路径上不能有两个连续的红色节点)。
+- 性质4：从任一节点到其每个叶子的所有路径都包含相同数目的黑色节点。
+- 性质5：每个叶子的节点都是黑色的空节点（NULL）。
 #### (54)HashMap底层
 
 ### IO流
