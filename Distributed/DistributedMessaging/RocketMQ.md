@@ -110,7 +110,8 @@
     ```
    - **启动**
    在bin目录下执行`mqnamesrv.cmd`
-   在bin目录下执行`mqbroker.cmd -n localhost:9876 autoCreateTopicEnable=true`
+   在bin目录下执行`mqbroker.cmd autoCreateTopicEnable=true`
+   或者`mqbroker.cmd -n localhost:9876 autoCreateTopicEnable=true`
    > **-n localhost:9876**: 这指定了要连接的 NameServer 的地址和端口。在此例中，它连接到处于本地主机的 NameServer，并使用默认的 9876 端口。
     **autoCreateToopicEnable=true**: 这是 Broker 的一个配置参数，用于控制是否允许自动创建 Topic。当设置为 true 时，如果生产者发送消息到一个尚不存在的 Topic，Broker 将会自动创建这个 Topic。这个参数的设置可以方便地在没有显示创建 Topic 的情况下，通过发送消息自动创建所需的 Topic。
    - **测试**
@@ -127,4 +128,7 @@
     tools.cmd org.apache.rocketmq.example.quickstart.Consumer
     ```
 2. **可视化工具RocketMQ DashBoard下载**
+- 下载地址：https://dist.apache.org/repos/dist/release/rocketmq/rocketmq-dashboard/1.0.0/rocketmq-dashboard-1.0.0-source-release.zip
+- application.properties配置文件`rocketmq.config.namesrvAddr=localhost:9876`
+- 配置文件修改之后，就可以执行`mvn package`打包命令，生成对应的jar包程序。打包成功之后，就可以在`target`目录下面找到生成的jar包，这个jar就是可执行的rocketmq-dashboard程序。
 ### 二、八股问题整理
