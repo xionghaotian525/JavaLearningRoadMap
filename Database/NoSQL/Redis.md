@@ -91,24 +91,242 @@ Redis是一种支持key-value等多种数据结构的存储系统。可用于缓
 
 ### 3.redis常用命令
 
+1. 键值相关命令：
+- `KEYS pattern`: 查找所有符合给定模式的键。
+- `EXISTS key`: 检查给定键是否存在。
+- `DEL key`: 删除给定的一个或多个键。
+- `EXPIRE key seconds`: 设置键的过期时间。
+- `TTL key`: 获取键的剩余生存时间。
+- `TYPE key`: 获取键对应值的类型。
+2. 字符串(**String**)相关命令:
+- `SET key value`：设置存储在给定键中的值。
+- `GET key`：获取指定键的值。
+- `INCR key`：将键的整数值增加一。
+- `INCRBY key amount`: 将键的整数值加amount。
+- `DECR key`：将键的整数值减少一。
+- `MSET key1 value1 [key2 value2 ...]`：同时设置一个或多个键值对。
+- `MGET key1 key2 ...`: 获取多个键的值。
+- `APPEND key value`: 将给定的值追加到原值的末尾。
+3. 列表(**List**)相关命令:
+- `LPUSH key value1 [value2]`：将一个或多个值插入到列表头部。
+- `RPUSH key value1 [value2]`：将一个或多个值插入到列表尾部。
+- `LPOP key`：移除并获取列表最左边的元素。
+- `RPOP key`：移除并获取列表最右边的元素。
+- `LRANGE key start stop`：获取列表指定范围内的元素。
+- `LLEN key`: 获取列表的长度。
+4. 集合(**Set**)相关命令:
+- `SADD key member1 [member2]`：向集合添加一个或多个成员。
+- `SREM key member1 [member2]`：移除集合中一个或多个成员。
+- `SMEMBERS key`：获取集合中的所有成员。
+- `SISMEMBER key member`：判断成员元素是否是集合的成员。
+- `SINTER key1 [key2]`: 返回所有给定集合的交集。
+- `SUNION key1 [key2]`: 返回所有给定集合的并集。
+5. 有序集合(**Zset**, Sorted Set)相关命令:
+- `ZADD key score1 member1 [score2 member2]`：向有序集合添加一个或多个成员，或者更新已存在成员的分数。
+- `ZREM key member [member ...]`：移除有序集合中的一个或多个成员。
+- `ZRANGE key start stop [WITHSCORES]`：按照索引范围返回有序集合指定区间内的成员。
+- `ZREVRANGE key start stop [WITHSCORES]`：返回有序集合中指定区间内的成员，通过索引，分数从高到底。
+- `ZSCORE key member`: 返回有序集中指定成员的分数。
+6. 散列(**Hash**)相关命令:
+- `HSET key field value`：给哈希表中的字段赋值。
+- `HGET key field`：获取存储在哈希表中指定字段的值。
+- `HGETALL key`：获取在哈希表中指定 key 的所有字段和值。
+- `HMSET key field1 value1 [field2 value2 ...]`：同时将多个 field-value (字段-值)对设置到哈希表中。
+- `HDEL key field1 [field2]`：删除一个或多个哈希表字段。
+- `HEXISTS key field`: 检查哈希表中指定字段是否存在。
+- `HKEYS key`: 获取哈希表中所有字段的名字。
+
+7. HyperLogLog相关命令
+- `PFADD`: 添加元素到HyperLogLog中。
+- `PFCOUNT`: 返回HyperLogLog的近似基数，即估计的唯一元素数量。
+- `PFMERGE`: 合并多个HyperLogLog为一个。
+8. Gitmap相关命令
+- `SETBIT`: 设置字符串指定偏移量的位(bit)值。
+- `GETBIT`: 获取字符串指定偏移量的位(bit)值。
+- `BITFIELD`: 对字符串的二进制位执行多个操作。
+- `BITOP`: 对一个或多个Bitmap进行AND、OR、NOT、XOR操作。
+- `BITCOUNT`: 计算字符串被设置为1的位的数量。
+- `BITPOS`: 查找第一个设置为0或1的位的位置。
+9.  geospatial相关命令
+- `GEOADD`: 添加具有给定地理空间位置（经度、纬度）的元素。
+- `GEODIST`: 返回两个给定位置之间的距离。
+- `GEORADIUS`: 以给定的经纬度为中心，找出某个半径内的元素。
+- `GEORADIUSBYMEMBER`: 以某个已存储的位置为中心，找出某个半径内的元素。
+- `GEOHASH`: 返回一个或多个位置元素的Geohash字符串。
+- `GEOPOS`: 返回一个或多个位置元素的经度和纬度。
+10. stream
+
+消息队列相关命令
+- `XADD`: 用于向Stream中追加消息，如果Stream不存在，此命令会自动创建Stream。
+- `XTRIM` 对流进行修剪，限制长度
+- `XDEL` 删除消息
+- `XLEN` 获取流包含的元素数量，即消息长度
+- `XRANGE` 获取消息列表，会自动过滤已经删除的消息
+- `XREVRANGE` 反向获取消息列表，ID 从大到小
+- `XREAD` 以阻塞或非阻塞方式获取消息列表，用于读取Stream中的消息，可以指定从某个ID开始读取。
+
+消费者组相关命令：
+
+- `XGROUP CREATE` 创建消费者组
+- `XREADGROUP GROUP` 读取消费者组中的消息
+- `XACK` 将消息标记为"已处理"
+- `XGROUP SETID` 为消费者组设置新的最后递送消息
+- `IDXGROUP DELCONSUMER` 删除消费者
+- `XGROUP DESTROY` 删除消费者组
+- `XPENDING` 显示待处理消息的相关信息
+- `XCLAIM` 转移消息的归属权
+- `XINFO` 查看流和消费者组的相关信息；
+- `XINFO GROUPS` 打印消费者组的信息；
+- `XINFO STREAM` 打印流信息
+
 ### 4.redis配置文件详解
+
+Redis可执行文件说明：
+文件名|说明
+---|---
+redis-server|Redis服务器
+redis-cli|Redis命令行客户端
+redis-benchmark|Redis性能测试工具
+redis-check-aof|Redis文件修复工具
+redis-check-dump|Redis文件检查工具
+
+redis.conf配置文件：
+1. 网络设置:
+`bind`: 指定Redis监听的网络接口（如127.0.0.1, 192.168.1.1等）。
+`port`: 设置Redis监听的端口，默认是6379。
+`timeout`: 设置客户端闲置多长时间后关闭连接。
+`tcp-keepalive`: 设置TCP连接的keepalive参数。
+2. 通用设置:
+`daemonize`: 是否以守护进程运行。
+`pidfile`: 当Redis以守护进程运行时，pidfile指定了文件写入PID的位置。
+`loglevel` 和 `logfile`: 设置日志记录的详细级别（如debug、verbose、notice、warning）以及日志文件的位置。
+`databases`: 设置数据库数量，默认通常为16。
+3. 安全:
+`requirepass`: 设置客户端连接到Redis服务器所需的密码。
+`rename-command`: 重命名特定的命令，以提高安全性。
+4. 持久化:
+使用 `save` 参数设置自动快照的间隔。
+`appendonly`: 是否开启AOF（Append Only File）持久化模式。
+`appendfsync`: AOF文件写入磁盘的频率。
+5. 性能和资源管理:
+`maxmemory`: 设置最大内存使用限制，超出限制时Redis会根据maxmemory-policy策略来删除键。
+`maxclients`: 设置同时连接的最大客户端数。
+6. 集群:
+`cluster-enabled`: 是否启用Redis集群模式。
+`cluster-config-file`: 指定集群的配置文件。
+`cluster-node-timeout`: 指定节点超时的毫秒数。
+6. 哨兵(Sentinel)模式:
+`sentinel monitor`: 当运行在哨兵模式下，监控指定名字的master。
+`sentinel auth-pass`: 哨兵认证主服务器所需的密码。
+7. 附加参数:
+`include`: 允许包含其他配置文件，可用于模块化配置管理。
 
 ### 5.redis数据结构
 
-首先对redis来说，所有的key（键）都是字符串。我们在谈基础数据结构时，讨论的是存储值的数据类型，主要包括常见的5种数据类型，分别是：String、List、Set、Zset、Hash。
-![](/Res/images/Redis-数据结构-五种基本数据类型.jpeg)
+![](/Res/images/Redis-数据结构.png)
 #### 5.1 redis五种基础数据类型
-1. String
 
-2. List
+首先对redis来说，所有的key（键）都是字符串。我们在谈基础数据结构时，讨论的是存储值的数据类型，主要包括常见的5种数据类型，分别是：**String**、**List**、**Set**、**Zset**、**Hash**。
+![](/Res/images/Redis-数据结构-五种基本数据类型.jpeg)
 
-3. Set
+**1. 字符串 (String):**
 
-4. Zset
+* 最基本的数据类型，可以是**字符串、整数或浮点数**，存储文本字符串，例如数字，邮件地址，图片，甚至是序列化后的对象。
+* 常用命令: `SET`, `GET`, `INCR`, `DECR`, `MGET`等。
+* 读写能力：对整个字符串或字符串的一部分进行操作；对整数或浮点数进行自增或自减操作；
+* 使用场景: 缓存数据，计数器，分布式锁等。
 
-5. Hash
+**2. 列表 (List):**
+
+* **字符串列表**，按插入顺序排序，链表上的每个节点都包含一个字符串。
+* 常用命令: `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LLEN`等。
+* 读写能力：对链表的两端进行push和pop操作，读取单个或多个元素；根据值查找或删除元素；
+* 使用场景: 消息队列，文章列表等需要顺序处理的数据。
+
+**3. 集合 (Set):**
+
+* **存储不重复且无序的字符串集合**。
+* 常用命令: `SADD`, `SREM`, `SMEMBERS`, `SINTER`等。
+* 读写能力：字符串的集合，包含基础的方法有看是否存在添加、获取、删除；还包含计算交集、并集、差集等
+* 使用场景: 标签，社交关系，唯一性检查、点赞、点踩、收藏等。
+
+**4. 有序集合 (Sorted Set):**
+
+* **它可以保存唯一的字符串元素，并且每个元素都关联一个浮点数分数**，Redis根据这个分数将所有元素从小到大排序。
+* 常用命令: `ZADD`, `ZREM`, `ZRANGE`, `ZSCORE`等。
+* 读写能力：字符串成员与浮点数分数之间的有序映射；元素的排列顺序由分数的大小决定；包含方法有添加、获取、删除单个元素以及根据分值范围或成员来获取元素
+* 使用场景: **排行榜**，**优先级队列**等需要排序的数据。
+
+**5. 哈希 (Hash):**
+
+* 键值对集合，**存储键值对的无序散列表**，类似于 Python 中的字典。
+* 常用命令: `HSET`, `HGET`, `HGETALL`, `HDEL`等。
+* 读写能力：包含方法有添加、获取、删除单个元素
+* 使用场景: 适合存储对象，存储用户信息，商品信息等结构化数据。
+
 #### 5.2 redis三种特殊数据类型
+**1. HyperLogLogs**
+
+* HyperLogLog是一种概率数据结构，用于估计一个集合中的唯一元素的数量（基数）。
+* 常用命令：HyperLogLog主要相关的命令有`PFADD`、`PFCOUNT`和`PFMERGE`。
+* 使用场景：HyperLogLog提供了不确切但在错误率可接受的情况下（标准误差0.81%）对基数进行近似计算的能力，这使得它在**需要统计大量数据并且对空间使用非常敏感的应用场景**下非常有用，如计数大量数据流中的唯一访问者数量。这个结构可以非常省内存的去统计各种计数，比如注册 IP 数、每日访问 IP 数、页面实时UV、在线用户数，共同好友数等。
+
+**2. Bitmaps**
+
+* Bitmaps并非Redis的一种独立数据类型，而是**字符串（String）数据类型的一种特殊使用方式**。在Bitmaps中，每个元素只占用一个二进制位(bit)，可以表示两种状态（0或1）。
+* 常用命令：Bitmap提供了一套位级别的操作命令，如SETBIT、GETBIT、BITCOUNT和BITOP。
+* 使用场景：它们非常**适用于需要大量布尔值的场景**，例如在线状态、特征标记、日活跃用户等，因为它们能够以极小的空间利用率进行存储和操作。
+
+**3. geospatial**
+
+* Redis的Geo数据类型基于**有序集合（Zset）**
+* 常用命令：包括GEOADD、GEODIST、GEORADIUS和GEORADIUSBYMEMBER。
+* 使用场景：它允许将**地理位置信息（经度和纬度）与名称关联起来**，并执行范围查询、半径查询和查找给定位置的周围元素等操作。例如，可以使用Geo数据类型来存储店铺的位置，并查询特定范围内的所有店铺，或计算两个地点之间的距离。
+
 #### 5.3 stream(v5.0)
+![](/Res/images/Redis-数据结构-stream结构2.png)
+**1. 为什么会设计stream**
+
+stream借鉴了Kafka的设计，是一个新的强大的支持多播的可持久化的**消息队列**。从字面上看是流类型，但其实从功能上看，是Redis对消息队列（MQ，Message Queue）的完善实现。
+
+**2. stream应用场景**
+
+* **消息队列**（Message Queuing）
+   - 分布式任务队列：可以将Redis Streams作为后台作业或任务的队列，系统中的生产者将任务发布到Stream中，消费者从中读取并处理这些任务。
+   - 应用解耦：在微服务架构中，使用Streams来传递消息，可以减少服务间的直接依赖，提高系统的可扩展性和可维护性。
+* **事件驱动架构**（Event-driven Architecture）
+  - 事件通知：在基于事件的系统中，可以使用Streams来发布和订阅事件，使得当事件发生时，相关的服务可以立即做出响应。
+  - 实时数据处理：例如，实时分析用户行为、监控数据或物联网（IoT）设备的状态变化。
+* **日志收集**（Log Aggregation）
+将来自不同服务或应用的日志聚合到一个中心位置，方便实时监控和后续的日志分析处理。
+* **流式数据分析**（Stream Analytics）
+对实时产生的数据流（比如来自社交媒体、电商平台的交易数据）进行实时分析和处理，以便快速做出决策或洞察消费者行为等。
+* **聊天应用和实时通信**（Chat Apps and Real-time Communication）
+用于构建高性能、可扩展的聊天应用，使用Stream来传递消息和事件，实现实时通信。
+* **时间序列数据**
+收集和分析时间序列数据（例如金融市场数据、气象数据等），Redis Streams可以通过其消息ID来确保数据的时间顺序性。
+
+Redis Streams特别适合处理业务场景足够简单，对于数据丢失不敏感，而且消息积压概率比较小的情况，(需要高吞吐量、低延迟和可靠性的应用场景？)。此外，通过将数据持久化和实现消费群组的概念，它还提供了一种有效的方式来平衡消息的生产和消费，保证了数据处理的可靠性和效率。
+
+**3. stream结构**
+![](/Res/images/Redis-数据结构-stream结构.png)
+* `Consumer Group` ：消费组，使用 XGROUP CREATE 命令创建，一个消费组有多个消费者(Consumer), 这些消费者之间是竞争关系。
+* `last_delivered_id` ：游标，每个消费组会有个游标 last_delivered_id，任意一个消费者读取了消息都会使游标 last_delivered_id 往前移动。
+* `pending_ids` ：消费者(Consumer)的状态变量，作用是维护消费者的未确认的 id。 pending_ids 记录了当前已经被客户端读取的消息，但是还没有 ack (Acknowledge character：确认字符)。如果客户端没有ack，这个变量里面的消息ID会越来越多，一旦某个消息被ack，它就开始减少。这个pending_ids变量在Redis官方被称之为PEL，也就是Pending Entries List，这是一个很核心的数据结构，它用来确保客户端至少消费了消息一次，而不会在网络传输的中途丢失了没处理。
+
+此外我们还需要理解两点：
+* 消息ID: 消息ID的形式是timestampInMillis-sequence，例如1527846880572-5，它表示当前的消息在毫米时间戳1527846880572时产生，并且是该毫秒内产生的第5条消息。消息ID可以由服务器自动生成，也可以由客户端自己指定，但是形式必须是整数-整数，而且必须是后面加入的消息的ID要大于前面的消息ID。
+* 消息内容: 消息内容就是键值对，形如hash结构的键值对，这没什么特别之处。
+
+**4. 独立消费**
+我们可以在不定义消费组的情况下进行Stream消息的独立消费，当Stream没有新消息时，甚至可以阻塞等待。Redis设计了一个单独的消费指令`xread`，可以将Stream当成普通的消息队列(list)来使用。使用xread时，我们可以完全忽略消费组(Consumer Group)的存在，**就好比Stream就是一个普通的列表(list)**。
+
+**5. 消费组消费**
+![](/Res/images/Redis-数据结构-stream-消费组消费.png)
+* 创建消费组
+Stream通过`xgroup create`指令创建消费组(Consumer Group)，需要传递起始消息ID参数用来初始化`last_delivered_id`变量。
+* 消费组消费
+Stream提供了`xreadgroup`指令可以进行消费组的组内消费，需要提供消费组名称、消费者名称和起始消息ID。它同xread一样，也可以阻塞等待新消息。读到新消息后，对应的消息ID就会进入消费者的PEL(正在处理的消息)结构里，客户端处理完毕后使用xack指令通知服务器，本条消息已经处理完毕，该消息ID就会从PEL中移除。
 #### 5.4 对象机制
 #### 5.5 底层数据结构
 
