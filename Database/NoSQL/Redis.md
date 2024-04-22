@@ -442,9 +442,17 @@ redis预分配的值对象：
 
 * 概述
 
-Redis 中的 SDS（Simple Dynamic String，简单动态字符串）是 Redis 用于存储字符串值的底层实现，是对 C 语言传统字符串（以 null 结尾的字符数组）的改良，内部结构类似于 C 语言的字符数组，但**额外存储了字符串长度和分配空间大小**，避免了 C 字符串的缺陷。SDS **用于解决 C 字符串的一些限制和安全性问题**, 具有动态扩容的特点. 其实现位于`src/sds.h`与`src/sds.c`中。SDS 除了保存数据库中的字符串值以外，SDS 还可以作为缓冲区（buffer）：包括 AOF 模块中的AOF缓冲区以及客户端状态中的输入缓冲区。
+Redis 中的 SDS（Simple Dynamic String，简单动态字符串）是 Redis 用于存储字符串值的底层实现，是对 C 语言传统字符串（以 null 结尾的字符数组）的改良，内部结构类似于 C 语言的字符数组，但**额外存储了字符串长度和分配空间大小**，避免了 C 字符串的缺陷。SDS **用于解决 C 字符串的一些限制和安全性问题**, 具有动态扩容的特点。SDS 除了保存数据库中的字符串值以外，SDS 还可以作为缓冲区（buffer）：包括 AOF 模块中的AOF缓冲区以及客户端状态中的输入缓冲区。
 
 * 结构
+```java
+struct sdshdr {
+    uint32_t len;    //字符串长度
+    uint32_t alloc;  //字符串空间大小
+    unsigned char flags; //表示sds的类型（8位）
+    char buf[];  //用于存储字符串数据
+};
+```
 ![](/Res/images/Redis-数据结构-底层数据结构-SDS.png)
 ![](/Res/images\Redis-数据结构-底层数据结构-SDS2.png)
 
@@ -472,21 +480,113 @@ Redis 中的 SDS（Simple Dynamic String，简单动态字符串）是 Redis 用
 **2. 压缩列表** - ZipList
 
 - 概述
+
 一种连续内存空间存储的顺序数据结构，每个元素可以是字符串或整数。优点:节省内存空间。适用于存储小规模的列表或有序集合。缺点:修改操作可能引发连锁更新，影响性能。使用场景: 在列表键元素较少或元素都是小整数时使用。
 
 ![](/Res/images/Redis-数据结构-底层数据结构-ziplist.png)
 
-- ziplist结构
-
-   - Header（头部）: 包含了ziplist的总字节长度、尾部（最后一个元素）的偏移量，以及ziplist中元素的数量。这些信息有助于快速地访问ziplist的基本属性和迅速找到ziplist的尾部。
-   - Entry（项）: 每个项可以存储一个整数或者一个字符串。  
-   - End（结束符）: 一个特定的字节（通常是0xFF），标记着ziplist的末尾，确保了ziplist结构的正确解析和遍历的终止。
+- ziplist结构(直达源码-->[src/ziplist.c](https://github.com/redis/redis/blob/unstable/src/ziplist.c))
+   - **Header**（头部）: 包含了ziplist的总字节长度、尾部（最后一个元素）的偏移量，以及ziplist中元素的数量。这些信息有助于快速地访问ziplist的基本属性和迅速找到ziplist的尾部。
+   - **Entry**（项&条目）: 每个项可以存储一个整数或者一个字符串。  
+   - **End**（结束符）: 一个特定的字节（通常是0xFF），标记着ziplist的末尾，确保了ziplist结构的正确解析和遍历的终止。
+   ```XML
+   * ZIPLIST OVERALL LAYOUT
+   * ======================
+   *
+   * The general layout of the ziplist is as follows:
+   *
+   * <zlbytes> <zltail> <zllen> <entry> <entry> ... <entry> <zlend>
+   *
+   * NOTE: all fields are stored in little endian, if not specified otherwise.
+   *
+   * <uint32_t zlbytes> is an unsigned integer to hold the number of bytes that
+   * the ziplist occupies, including the four bytes of the zlbytes field itself.
+   * This value needs to be stored to be able to resize the entire structure
+   * without the need to traverse it first.
+   *
+   * <uint32_t zltail> is the offset to the last entry in the list. This allows
+   * a pop operation on the far side of the list without the need for full
+   * traversal.
+   *
+   * <uint16_t zllen> is the number of entries. When there are more than
+   * 2^16-2 entries, this value is set to 2^16-1 and we need to traverse the
+   * entire list to know how many items it holds.
+   *
+   * <uint8_t zlend> is a special entry representing the end of the ziplist.
+   * Is encoded as a single byte equal to 255. No other normal entry starts
+   * with a byte set to the value of 255.
+   ```
 
 - Entry结构
+   - **Previous Entry Length**（前一项的长度）: 存储前一项的长度，使得ziplist可以被双向遍历。
+   - **Encoding**（编码）: 指定了存储的值是整数还是字符串，以及使用了哪一种格式或长度。
+   - **Content**（内容）: 实际存储的数据，可以是一个整数的二进制表示，或者是一个字符串的字节序列。
 
-  - Previous Entry Length（前一项的长度）: 存储前一项的长度，使得ziplist可以被双向遍历。
-  - Encoding（编码）: 指定了存储的值是整数还是字符串，以及使用了哪一种格式或长度。
-  - Content（内容）: 实际存储的数据，可以是一个整数的二进制表示，或者是一个字符串的字节序列。
+   ```XML
+   * ZIPLIST ENTRIES
+   * ===============
+   *
+   * Every entry in the ziplist is prefixed by metadata that contains two pieces
+   * of information. First, the length of the previous entry is stored to be
+   * able to traverse the list from back to front. Second, the entry encoding is
+   * provided. It represents the entry type, integer or string, and in the case
+   * of strings it also represents the length of the string payload.
+   * So a complete entry is stored like this:
+   *
+   * <prevlen> <encoding> <entry-data>
+   ```
+   在entry中存储的是比较小的int类型时，encoding和entry-data会合并一起表示，此时会没有entry-data字段
+   ```XML
+   * Sometimes the encoding represents the entry itself, like for small integers
+   * as we'll see later. In such a case the <entry-data> part is missing, and we
+   * could have just:
+   *
+   * <prevlen> <encoding>
+   ```
+   前一个entry长度`prevlen`编码方式：如果这个长度小于 254 字节，它只会消耗一个字节，将长度表示为无符号 8 位整数。 当长度大于等于254时，会消耗5个字节。 第一个字节设置为 254 (FE) 以指示后面有更大的值。 其余 4 个字节以前一个条目的长度为值。
+   ```XML
+   * So practically an entry is encoded in the following way:
+   *
+   * <prevlen from 0 to 253> <encoding> <entry>
+   *
+   * Or alternatively if the previous entry length is greater than 253 bytes
+   * the following encoding is used:
+   *
+   * 0xFE <4 bytes unsigned little endian prevlen> <encoding> <entry>
+   ```
+   encoding字段内容：条目的encoding字段取决于条目的内容。 当条目是**字符串**时，encoding第一个字节的前 2 位将保存用于存储字符串长度的编码类型，后面是字符串的实际长度。 当条目是**整数**时，encoding前 2 位都设置为 1。接下来的 2 位用于指定此标头之后将存储哪种整数。 不同类型和编码的概述如下。 第一个字节始终足以确定条目的类型。
+   ```XML
+   * |00pppppp| - 1 byte
+   *      String value with length less than or equal to 63 bytes (6 bits).
+   *      "pppppp" represents the unsigned 6 bit length.
+   * |01pppppp|qqqqqqqq| - 2 bytes
+   *      String value with length less than or equal to 16383 bytes (14 bits).
+   *      IMPORTANT: The 14 bit number is stored in big endian.
+   * |10000000|qqqqqqqq|rrrrrrrr|ssssssss|tttttttt| - 5 bytes
+   *      String value with length greater than or equal to 16384 bytes.
+   *      Only the 4 bytes following the first byte represents the length
+   *      up to 2^32-1. The 6 lower bits of the first byte are not used and
+   *      are set to zero.
+   *      IMPORTANT: The 32 bit number is stored in big endian.
+   * |11000000| - 3 bytes
+   *      Integer encoded as int16_t (2 bytes).
+   * |11010000| - 5 bytes
+   *      Integer encoded as int32_t (4 bytes).
+   * |11100000| - 9 bytes
+   *      Integer encoded as int64_t (8 bytes).
+   * |11110000| - 4 bytes
+   *      Integer encoded as 24 bit signed (3 bytes).
+   * |11111110| - 2 bytes
+   *      Integer encoded as 8 bit signed (1 byte).
+   * |1111xxxx| - (with xxxx between 0001 and 1101) immediate 4 bit integer.
+   *      Unsigned integer from 0 to 12. The encoded value is actually from
+   *      1 to 13 because 0000 and 1111 can not be used, so 1 should be
+   *      subtracted from the encoded 4 bit value to obtain the right value.
+   * |11111111| - End of ziplist special entry.
+   *
+   * Like for the ziplist header, all the integers are represented in little
+   * endian byte order, even when this code is compiled in big endian systems.
+   ```
 
 - 为什么ZipList特别省内存
    - ziplist节省内存是相对于普通的list来说的，如果是普通的数组，那么它每个元素占用的内存是一样的且取决于最大的那个元素（很明显它是需要预留空间的）；
@@ -500,15 +600,146 @@ Redis 中的 SDS（Simple Dynamic String，简单动态字符串）是 Redis 用
   - **立即缩容**：在移除节点后，ziplist 立即缩容，可能导致频繁的内存分配和释放操作。
 
   - **链式扩容**：节点如果扩容，可能导致节点占用的内存增长，并且在超过一定字节后，可能会导致链式扩容。链式扩容的时间复杂度为 O(N)，虽然在大多数情况下概率较小，但在恶劣情况下会导致性能下降。
+  
+      > 链式扩容（级联更新）这种现象发生在 ziplist 数据结构中，主要是因为 ziplist 存储了关于前一个元素长度的元数据信息。**当一个元素被插入或修改导致其长度增加，并且这个长度增加导致存储前一个元素长度的空间（prevlen）不足以容纳新的长度时**，就需要对当前元素进行重新分配以适应长度的变化。这种重新分配可能会影响到相邻的元素，导致它们也需要进行重新分配来适应自己前一个元素的长度变化，从而形成一种“级联”效应。级联更新是 ziplist 的一个潜在缺陷，因为它可能会导致对多个连续元素进行重复的内存分配操作，从而影响性能。这是在 Redis 的后续版本中**引入 listpack 作为替代**的重要原因之一，listpack 设计上试图减少这种级联更新的可能性，提高数据操作的效率。 
 
    综上所述，尽管 ziplist 能够有效地节省内存空间，但在写操作频繁、节点删除较多或节点扩容较大时，可能会出现性能问题。
 
 **3. 快表** - QuickList
 
 - 概述
+
 QuickList是由多个 ziplist 组成的双向链表，每个 ziplist 存储一定数量的元素。优点:结合了 ziplist 和双向链表的优点，既节省空间，又提升了修改操作的性能。使用场景: 在列表键元素较多或包含较大元素时使用。
-- quicklist结构
-![](/Res/images/Redis-数据结构-底层数据结构-QuickList.png)
+
+![](/Res/images/Redis-数据结构-底层数据结构-QuickList2.png)
+   
+> ziplist补充(ziplist缺点-链式扩容&级联更新)
+> 当一个entry被插入的时候，我们需要设置下一个entry中的prevlen字段为新插入entry的长度。会发生如下的情况：新插入entry的长度超过了254[>=254]，那么下一个entry的prelen需要5个字节记录该长度，但是呢，此时下一个entry的prevlen字段此时只有一个字节，所以需要对下一个entry进行grown[扩容]，更糟糕的是，下个entry因为扩容导致长度超过254，还会引起下下个entry的扩容…，这种现象呢就是级联更新，简单点来说就是，**因为一个entry的插入导致之后的entry都需要重新扩容和记录前一个entry的prevlen现象称之为“级联更新”**。
+
+从 Redis 6.2 版本开始，quicklist 的底层实现由原来的 ziplist 改为了 listpack。Listpack 是 ziplist 的升级版本，主要是为了解决ziplist中存在的一些问题，比如，ziplist中扩展元素长度时可能需要进行昂贵的重新分配操作。listpack 提供了更好的性能和内存使用效率，在保持与 ziplist 类似的密集存储方式的同时，允许更大的单个元素大小，并且有更强的扩展性。**listpack和ziplist对象结构的不同是，listpack将prevlen替换为了curlen，从而有效避免级联更新。并将且将culen字段放在entry结构的最后面。这样做是为了，能够通过total-bytes定位到最后一个element的末尾位置然后获取到curlen从而找到前一个element的位置，从而实现从后往前遍历。**
+
+
+> 补充说明listpack和ziplist
+> 参考博客 [ziplist和listpack](https://blog.csdn.net/weixin_46290302/article/details/134088080?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522171375528216800180626501%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=171375528216800180626501&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~blog~sobaiduend~default-1-134088080-null-null.nonecase&utm_term=listpack%E5%92%8Cziplist&spm=1018.2226.3001.4450)
+> - ziplist包括三大部分，<头部，entry，尾部>。头部包含"zlbytes,zltail,zllen"；尾部包含"zlend标记ziplist的结尾"；entry包括"prevlen,encoding,entry_data"。由于prevlen记录方式存在级联更新的问题，小于254字节需要1字节内存，大于等于254字节需要5字节内存。
+> - listpack包括三大部分，<头部，entry，尾部>。头部包含"zlbytes,zllen"相比与ziplist少了zltail；entry包括"encoding,entry_data,curlen"；尾部包含"zlend标记listpack的结尾"。由于entry中的prevlen由curlen取代，所以不再有级联更新的问题。
+> - 不论是"ziplist"还是"listpack"获取len的方式都是一样的：
+   先判断头部中zllen字段存储的数值与UNIT16_MAX的关系
+   小于UNIT16_MAX，直接返回zllen
+   大于等于UNIT16_MAX需要从头到尾遍历获取元素总数
+   如果新得到的元素总数小于UINT16_MAX，重新设置zllen的数值
+
+
+- quicklist结构(直达源码-->[src/quicklist.h](https://github.com/redis/redis/blob/unstable/src/quicklist.h))
+  
+   基于listpack(V6.2)
+   ```java
+   /* quicklist is a 40 byte struct (on 64-bit systems) describing a quicklist.
+   * 'count' is the number of total entries.
+   * 'len' is the number of quicklist nodes.
+   * 'compress' is: 0 if compression disabled, otherwise it's the number
+   *                of quicklistNodes to leave uncompressed at ends of quicklist.
+   * 'fill' is the user-requested (or default) fill factor.
+   * 'bookmarks are an optional feature that is used by realloc this struct,
+   *      so that they don't consume memory when not used. */
+   typedef struct quicklist {
+      quicklistNode *head;
+      quicklistNode *tail;
+      unsigned long count;        /* total count of all entries in all listpacks */
+      unsigned long len;          /* number of quicklistNodes */
+      signed int fill : QL_FILL_BITS;       /* fill factor for individual nodes */
+      unsigned int compress : QL_COMP_BITS; /* depth of end nodes not to compress;0=off */
+      unsigned int bookmark_count: QL_BM_BITS;
+      quicklistBookmark bookmarks[];
+   } quicklist;
+   ```
+   基于ziplist
+   ```java
+   typedef struct quicklist {
+      // quicklist头结点
+      quicklistNode *head;
+      // quicklist 尾节点
+      quicklistNode *tail;
+      // 所有的ziplist中的entry总数量
+      unsigned long count; /* total count of all entries in all ziplists */
+      // ziplist节点数量
+      unsigned long len;   /* number of quicklistNodes */
+      // ziplist中entry的上限，默认为-2，和redis中配置的 list-max-ziplist-size 一致
+      int fill : QL_FILL_BITS;  /* fill factor for individual nodes */
+      // 首尾节点不压缩的个数，若设置为1，则首尾节点各有一节点不压缩；设置为0，则代表所有节点不压缩
+      unsigned int compress : QL_COMP_BITS; /* depth of end nodes not to compress;0=off */
+      // 内存重分配时的书签数量及数组，一般用不到
+      unsigned int bookmark_count: QL_BM_BITS;
+      quicklistBookmark bookmarks[];
+   } quicklist;
+
+   ```
+- quicklistNode结构
+
+   基于listpack(V6.2)
+   ```java
+   /* quicklistNode is a 32 byte struct describing a listpack for a quicklist.
+   * We use bit fields keep the quicklistNode at 32 bytes.
+   * count: 16 bits, max 65536 (max lp bytes is 65k, so max count actually < 32k).
+   * encoding: 2 bits, RAW=1, LZF=2.
+   * container: 2 bits, PLAIN=1 (a single item as char array), PACKED=2 (listpack with multiple items).
+   * recompress: 1 bit, bool, true if node is temporary decompressed for usage.
+   * attempted_compress: 1 bit, boolean, used for verifying during testing.
+   * dont_compress: 1 bit, boolean, used for preventing compression of entry.
+   * extra: 9 bits, free for future use; pads out the remainder of 32 bits */
+   typedef struct quicklistNode {
+      struct quicklistNode *prev;
+      struct quicklistNode *next;
+      unsigned char *entry;
+      size_t sz;             /* entry size in bytes */
+      unsigned int count : 16;     /* count of items in listpack */
+      unsigned int encoding : 2;   /* RAW==1 or LZF==2 */
+      unsigned int container : 2;  /* PLAIN==1 or PACKED==2 */
+      unsigned int recompress : 1; /* was this node previous compressed? */
+      unsigned int attempted_compress : 1; /* node can't compress; too small */
+      unsigned int dont_compress : 1; /* prevent compression of entry that will be used later */
+      unsigned int extra : 9; /* more bits to steal for future usage */
+   } quicklistNode;
+   ```
+   基于ziplist
+   ```java
+   typedef struct quicklistNode {
+      // 前一个节点（ziplist）指针
+      struct quicklistNode *prev;
+      // 后一个节点（ziplist）指针
+      struct quicklistNode *next;
+      // 当前节点ziplist指针
+      unsigned char *zl;
+      // 当前节点ziplist的字节大小，即zlbytes
+      unsigned int sz;             /* ziplist size in bytes */
+      // 当前节点ziplist中entry的数量
+      unsigned int count : 16;     /* count of items in ziplist */
+      // 编码方式:1-ziplist; 2-lzf压缩模式
+      unsigned int encoding : 2;   /* RAW==1 or LZF==2 */
+      // 数据容器类型：1-其他（预留扩展类型）；2-ziplist
+      unsigned int container : 2;  /* NONE==1 or ZIPLIST==2 */
+      // 是否被压缩：1-说明被解压，将来要重新压缩。
+      unsigned int recompress : 1; /* was this node previous compressed? */
+      // 测试字段
+      unsigned int attempted_compress : 1; /* node can't compress; too small */
+      // 预留字段
+      unsigned int extra : 10; /* more bits to steal for future usage */
+   } quicklistNode;
+   ```
+
+- 优缺点
+
+   优点：
+   - 快表的节点大小固定，可以有效地避免内存碎片的发生。
+   -  快表支持动态增加和删除节点，可以随着数据的增长而自动扩容或缩容，不需要预先分配空间。
+   - 快表的节点采用ziplist的紧凑存储方式，使得节点访问和遍历的效率较高。同时，快表支持从头和尾部两个方向同时遍历节点。
+
+   缺点：
+   -  快表的节点大小固定，如果节点中的元素数量较少，会造成一定的空间浪费。
+   -  快表中的元素只能是整数或字节数组，不支持其他数据类型的存储。
+   - 快表的插入和删除操作的效率较低，因为在插入或删除元素时，需要移动后面的元素，可能会导致大量的内存复制操作。如果需要频繁进行插入和删除操作，建议使用其他数据结构，例如链表。
+   - 当快表中的元素数量较大时，遍历整个快表的效率也可能较低，因为快表是由多个节点组成的链表，需要依次遍历每个节点才能访问所有元素。
+
 
 **4. 字典**/哈希表 - Dict
 
