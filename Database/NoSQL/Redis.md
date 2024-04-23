@@ -742,11 +742,177 @@ QuickList是由多个 ziplist 组成的双向链表，每个 ziplist 存储一�
 
 
 **4. 字典**/哈希表 - Dict
-
+> [redis底层数据结构-Dict](https://axlgrep.github.io/tech/redis-dict.html)
 - 概述
-Dict是一种基于哈希表的键值对数据结构，使用链地址法解决哈希冲突。优点:高效的查找、插入和删除操作，时间复杂度接近 O(1)。使用场景: 存储键值对数据，例如 Redis 的数据库和 Hash 类型。
+
+Redis 的 Dict 是一个高效的键值对映射数据结构，采用双哈希表实现以支持无锁的渐进式 Rehash，确保扩容或缩容时的高效性能。它通过哈希表节点以链表形式解决哈希冲突，允许快速的查找、插入和删除操作，是实现 Redis 各种数据类型和高级功能的基础架构之一。
 - Dict结构
-- 要点
+
+![](/Res/images/Redis-数据结构-底层数据结构-Dict.png)
+
+**`type`**:这是一个指向 dictType 结构的指针，**为该字典提供一套特定的操作函数**。dictType 结构包含了一系列函数指针，用于定义键值对的复制、释放、比较等操作。这使得 dict 结构能够以通用的方式操作不同类型的键和值。
+
+**`privdata`**:这是一个指向任意类型数据的指针，该数据会被传递给 dictType 结构中的各种函数。它允许这些函数拥有一个通用的接口，同时又能进行针对特定情境的操作。
+
+**`ht[0]`** 和 **`ht[1]`**:这是两个 dictht（哈希表）数组，用于存储字典中的元素。Redis 使用一个**渐进式的 rehashing 过程**来扩展或缩小这个数据结构的容量。**通常，所有的操作都在 ht[0] 上进行，当字典需要扩展或缩小时，元素会逐渐从 ht[0] 移动到 ht[1]**，这一过程是**逐渐进行**的，以**避免长时间的阻塞**。
+
+**`rehashidx`**:这是一个标记，用来表示** rehashing 进程的进度**。当不在 rehashing 时，该值为 -1。当开始 rehashing 时，该值会被设置为 0，并随着 rehashing 过程的进行逐渐增加，直到 rehashing 完成，此时再次将该值设置为 -1。
+
+**`iterators`**:这是**正在对字典进行迭代的迭代器的数量**。这个计数有助于管理对字典的迭代，确保即使在 rehashing 过程中也能安全地进行迭代操作。有活跃的迭代器时，可能会暂停 rehashing 过程，以保证迭代器的一致性和准确性。
+
+- Dictht结构
+
+![](/Res/images/Redis-数据结构-底层数据结构-Dict-Dictht.png)
+```java
+/* This is our hash table structure. Every dictionary has two of this as we
+ * implement incremental rehashing, for the old to the new table. */
+typedef struct dictht {
+    dictEntry **table;      // HashTable数组
+    unsigned long size;     // HashTable的大小
+    unsigned long sizemask; // HashTable大小掩码,总是等于size - 1, 通常用来计算索引
+    unsigned long used;     // 已经使用的节点数,实际上就是HashTable中已经存在的dictEntry数量
+} dictht;
+```
+Redis的字典使用HashTable作为底层实现,一个HashTable中可以保存多个哈希表结点(dictEntry), 而每个dictEntry中就保存着字典中的一个键值对, `table`属性就是一个数组, 数组中每个元素的类型都是指向dictEntry的指针,而`size`属性便是table数组的长度, `sizemask`总是等于size - 1, 用于计算索引信息, `used`属性记录当前HashTable中dictEntry的总数量
+
+**`table`**:这是一个数组，具体类型是指向字典条目（dictEntry）指针的数组。每一个 dictEntry 包含了键值对信息。这个 table 是哈希表的本质存储结构，实际的数据（键值对）都存储在这里。
+
+**`size`**:这个成员表示哈希表中 table 数组的大小，也就是可以容纳的 dictEntry 数目。它总是2的幂次，这是为了使用位掩码（sizemask）与运算来替代取模运算，提升计算效率。
+
+**`sizemask`**:它是与 size 成员配合使用的位掩码。它总是等于 size - 1。当计算一个键的哈希值来确定其在 table 数组中的位置时，用哈希值对 size 取模，等价于与 sizemask 进行按位与运算。后者由于只涉及二进制位运算，因此效率更高。
+
+**`used`**:代表哈希表中已有的元素数量，即实际已经使用的 dictEntry 数目。这个数值在添加或删除键值对时会相应地增加或减少。
+
+- DictEntry结构
+
+![](/Res/images/Redis-数据结构-底层数据结构-Dict-DictEntry.png)
+```java
+struct dictEntry {
+    void *key;
+    union {
+        void *val;
+        uint64_t u64;
+        int64_t s64;
+        double d;
+    } v;
+    struct dictEntry *next;     /* Next entry in the same hash bucket. */
+};
+typedef struct {
+    void *key;
+    dictEntry *next;
+} dictEntryNoValue;
+```
+dictEntry是Dictht中结点的表现形式, 每个dictEntry都保存着一个键值对, key属性指向键值对的键对象, 而v属性则保存着键值对的值, **Redis采用了联合体来定义v**, 使键值对的值既可以存储一个指针, 也可以存储有符号/无符号整形数据,甚至可以存储浮点形数据, Redis使用联合体的形式来存储键值对的值可以让内存使用更加精细灵活, 另外, 既然是HashTable, 不可避免会发生两个键不同但是计算出来存放索引相同的情况, **为了解决Hash冲突的问题, dictEntry还有一个next属性, 用来指向与当前dictEntry在同一个索引的下一个dictEntry.**
+
+- 核心特性
+
+==哈希算法== 
+   
+   Redis计算哈希值和索引值方法如下：
+  ```java
+   #1、使用字典设置的哈希函数，计算键 key 的哈希值
+   hash = dict->type->hashFunction(key);
+
+   #2、使用哈希表的sizemask属性和第一步得到的哈希值，计算索引值
+   index = hash & dict->ht[x].sizemask;
+  ``` 
+==解决哈希冲突==
+
+   当两个或更多的键被哈希到同一位置时（即发生哈希冲突），Redis 通过**链地址法**来解决冲突，即在这个位置维护一个链表，所有哈希到这个位置的键值对都会被加入到这个链表中。
+
+==自动扩容和缩容==
+
+可以预见的是,随着我们不断的对HashTable进行操作,可能会发生以下两种情况:
+
+   -  不断的向HashTable中添加数据,HashTable中每个索引上的dictEntry数量会越来越多,也就是单链表会越来越长,这会十分影响字典的查询效率(最坏的场景可能要把整个单链表遍历完毕才能确定一个Key对应的dictEntry是否存在), 而Redis通常被当做缓存,这种低性能的场景是不被容许的.
+
+   - 向一个本身已经十分巨大的HashTable执行删除节点的操作,由于原先这个HashTable的size很大(也就是说table数组十分巨大,我们假设size为M), 但是执行了大量的删除操作之后,table数组中很多元素指向了NULL(由于对应的索引上已经没有任何dictEntry, 相当于一个空的单链表), HashTable中剩余结点我们假设为N,这时M远大于N,也就是说之上table数组中至少有M - N个元素指向了NULL,这是对内存空间的巨大浪费,而Redis是内存型数据库,这种浪费内存的场景也是不被容许的.
+
+针对以上两种场景,**为了让HashTable的负载因子(HashTable中所有dictEntry的数量/HashTable的size值)维持在一个合理的范围内**,Redis在HashTable保存的dictEntry数量太多或者太少的时候,会对HashTable的大小进行扩展或者收缩,在没有执行Rehash操作时,字典的所有数据都存储在ht[0]所指向的HashTable中,而在Rehash操作过程中,Redis会创建一个新的HashTable, 并且令ht[1]指向它,然后逐步的将ht[0]指向的HashTable的数据迁移到ht[1]上来
+
+**判断扩展HashTable的逻辑**：
+```java
+/* Expand the hash table if needed */
+static int _dictExpandIfNeeded(dict *d)
+{
+   /* Incremental rehashing already in progress. Return. */
+   if (dictIsRehashing(d)) return DICT_OK;
+
+   /* If the hash table is empty expand it to the initial size. */
+   if (d->ht[0].size == 0) return dictExpand(d, DICT_HT_INITIAL_SIZE);
+
+   /* If we reached the 1:1 ratio, and we are allowed to resize the hash
+   * table (global setting) or we should avoid it but the ratio between
+   * elements/buckets is over the "safe" threshold, we resize doubling
+   * the number of buckets. */
+   if (d->ht[0].used >= d->ht[0].size &&
+      (dict_can_resize ||
+         d->ht[0].used/d->ht[0].size > dict_force_resize_ratio))
+   {
+      return dictExpand(d, d->ht[0].used*2);
+   }
+   return DICT_OK;
+}
+```
+每次获取一个Key的索引信息时,都会调用上述的_dictExpandIfNeeded(dict *d)方法判断是否需要对当前HashTable执行扩展操作,满足下列任意条件之一,便会执行扩展操作:
+
+- 当前ht[0]所指向的HashTable大小为0
+- 服务器目前没有执行BGSAVE或者BGREWRITEAOF操作,并且HashTable的负载因子大于等于1(d->ht[0].used >= d->ht[0].size)
+- 服务器目前正在执行BGSAVE或者BGREWRITEAOF操作,并且HashTable的负载因子大于5(dict_force_resize_ratio = 5)
+
+**判断收缩HashTable的逻辑**：
+```java
+int htNeedsResize(dict *dict) {
+   long long size, used;
+
+   size = dictSlots(dict);
+   used = dictSize(dict);
+   return (size > DICT_HT_INITIAL_SIZE &&
+            (used*100/size < HASHTABLE_MIN_FILL));
+}
+
+/* Resize the table to the minimal size that contains all the elements,
+* but with the invariant of a USED/BUCKETS ratio near to <= 1 */
+int dictResize(dict *d)
+{
+   int minimal;
+
+   if (!dict_can_resize || dictIsRehashing(d)) return DICT_ERR;
+   minimal = d->ht[0].used;
+   if (minimal < DICT_HT_INITIAL_SIZE)
+      minimal = DICT_HT_INITIAL_SIZE;
+   return dictExpand(d, minimal);
+}
+```
+Redis会定期的检查数据库字典HashTable的状态,当HashTable的负载因子小于0.1时,会自动的对HashTable执行收缩操作
+
+ ==rehash过程==
+  
+  - **分配空间**：为ht[1]指向的HashTable分配空间, 分配空间的大小取决于要执行的操作,以及ht[0]所指向HashTable中dictEntry结点的数量, 也就是ht[0].used中记录的值:
+    - 如果当前执行的是扩展操作,那么新HashTable的大小为第一个大于等于2 * ht[0].used的2的n次方幂
+    - 如果当前执行的是收缩操作,那么新HashTable的大小为第一个大于等于ht[0].used的2的n次方幂
+   - **渐进式rehash**：将ht[0]所指向HashTable中的所有dictEntry节点都迁移到ht[1]所指向的新HashTable上(由于两个HashTable的size不同,所以在迁移过程中要重新计算dictEntry的索引,这也就是rehash的关键所在)
+   - **迁移完成**：当迁移完成之后,ht[0]所指向的HashTable中已经没有任何节点,释放该HashTable, 并且令ht[0]指向迁入节点的新HashTable, 最后为ht[1]创建一个空白的HashTable,为下一次rehash做准备
+
+![](/Res/images/Redis-数据结构-底层数据结构-Dict-rehash.png)
+说明：可以看到当前rehashidx指向ht[0]的索引2,这说明ht[0]的[0, rehashidx - 1]对应buckets上的dictEntry都已经迁移完毕,另外我们发现正在执行渐进式rehash字典中的数据一部分在ht[0]中,而另一部分在ht[1]中,所以在渐进式rehash执行期间,字典的删除,查找以及更新操作,都会在两个HashTable上执行(先尝试在ht[0]上执行操作,如果没有成功,则再尝试在ht[1]上进行操作),而在渐进式rehash执行期间,如果我们需要往字典中添加新的结点,则会一律添加到ht[1]上,这样可以保证ht[0]上的结点只减不增(也就是已经迁移过的buckets不会再出现新的结点)
+
+==渐进式rehash==
+
+   为了避免rehash过程阻塞服务器，Redis采用渐进式rehash策略。在进行rehash期间，所有的读写操作都会同时在ht[0]和ht[1]上进行，并逐步将ht[0]上的键值对迁移到ht[1]。
+   
+==rehash触发条件==
+   - 负载因子过高(扩容): 
+     - 当前ht[0]所指向的HashTable大小为0
+     - 服务器目前没有执行BGSAVE或者BGREWRITEAOF操作,并且HashTable的负载因子大于等于1(d->ht[0].used >= d->ht[0].size)
+     - 服务器目前正在执行BGSAVE或者BGREWRITEAOF操作,并且HashTable的负载因子大于5(dict_force_resize_ratio = 5) 
+   - 负载因子过低(缩容): 
+     - Redis会定期的检查数据库字典HashTable的状态,当HashTable的负载因子小于0.1时,会自动的对HashTable执行收缩操作
+
+==Dict优缺点==
+
+ Dict 提供了快速的键值对查找和插入性能，能高效地支持数据的增删改查操作；然而，在内存使用上它可能不如一些更紧凑的数据结构高效，尤其是在存储大量小对象时，还有当哈希表发生扩容或收缩时可能会有短暂的性能下降。
+
 
 **5. 整数集** - IntSet
 
