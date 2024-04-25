@@ -261,10 +261,10 @@ protected int elementCount;
 protected int capacityIncrement;  
 ```
 - 常用方法略，和ArrayList很像
-- Synchronization - All methods are **synchronized**, making it thread-safe.
-- **capacity()** - Returns the current capacity of the Vector.
-- **addElement(E obj)** - Adds an element to the end of the Vector.
-- Doubles its array size whenever it's resized.
+- 和ArrayList的对比
+  **同步**：Vector 是同步的，也就是说它是线程安全的。每个单独的方法，如 add、get 等被 `synchronized` 关键字修饰，因此可以在多线程环境下使用而不会出现并发问题。 相比之下，ArrayList 不是线程安全的。
+  **性能**：由于 Vector 的方法是同步的，所以在单线程程序中它比 ArrayList 慢。但是，如果不需要线程安全且性能是重点考虑因素，ArrayList 通常是更好的选择。
+  **增长策略**：当 Vector 需要增长来存储更多元素时，它通常将其大小**翻倍**，而 ArrayList 则通常增长 **50%**。不过，这两个类都允许用户在创建时指定初始大小，并且可以通过调用 `ensureCapacity` 方法来控制数组的增长。
 
     3. **==LinkedList==**
 ![](/Res/images/集合框架-Collection-List-LinkedList层次结构图.png)
@@ -272,6 +272,38 @@ protected int capacityIncrement;
 ![](/Res/images/集合框架-Collection-List-LinkedList.png)
   - LinkedList底层通过 **双向链表(Deque)** 实现。LinkedList同时实现了`List`接口和`Deque`接口，也就是说它既可以看作一个顺序容器，又可以看作一个队列(Queue)，同时又可以看作一个栈(Stack)。这样看来，LinkedList简直就是个全能冠军。当你需要使用栈或者队列时，可以考虑使用LinkedList，一方面是因为Java官方已经声明不建议使用Stack类，更遗憾的是，Java里根本没有一个叫做Queue的类(它是个接口名字)。关于栈或队列，现在的首选是`ArrayDeque`，它有着比LinkedList(当作栈或队列使用时)有着更好的性能
   - LinkedList的实现方式决定了所有跟下标相关的操作都是线性时间，而在首段或者末尾删除元素只需要常数时间。为追求效率LinkedList没有实现同步(`synchronized`)，如果需要多个线程并发访问，可以先采用`Collections.synchronizedList()`方法对其进行包装。
+- 底层数据结构
+
+```java
+transient int size = 0;
+
+/**
+ * Pointer to first node.
+ * Invariant: (first == null && last == null) ||
+ *            (first.prev == null && first.item != null)
+ */
+transient Node<E> first;
+
+/**
+ * Pointer to last node.
+ * Invariant: (first == null && last == null) ||
+ *            (last.next == null && last.item != null)
+ */
+transient Node<E> last;
+```
+```java
+private static class Node<E> {
+    E item;
+    Node<E> next;
+    Node<E> prev;
+
+    Node(Node<E> prev, E element, Node<E> next) {
+        this.item = element;
+        this.next = next;
+        this.prev = prev;
+    }
+}
+```
 
 - getFirst(), getLast()
 
@@ -1007,7 +1039,7 @@ public boolean removeLastOccurrence(Object o) {
 ```
 
 
-2. **Set**
+1. **Set**
     1. **==HashSet==**
 ![](/Res/images/集合框架-Collection-Set-HashSet层次结构图.png)
 - 概述
@@ -1132,7 +1164,7 @@ LinkedHashSet的底层数据是**哈希表**+**双向链表**
     * `removeAll(Collection c)`: 从 LinkedHashSet 中删除包含在指定集合中的所有元素。
     * `retainAll(Collection c)`: 从 LinkedHashSet 中删除所有未包含在指定集合中的元素。
 
-3. **Queue**
+1. **Queue**
 ![](/Res/images/集合框架-Collection-Queue层次结构图.png)
 
 - Java里有一个叫做Stack的类，却没有叫做Queue的类(它是个接口名字)。当需要使用栈时，Java已不推荐使用`Stack`，而是推荐使用更高效的`ArrayDeque`；既然Queue只是一个接口，当需要使用队列时也就首选`ArrayDeque`了(次选是`LinkedList`)。
