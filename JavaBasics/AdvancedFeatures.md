@@ -1039,7 +1039,7 @@ public boolean removeLastOccurrence(Object o) {
 ```
 
 
-1. **Set**
+2. **Set**
     1. **==HashSet==**
 ![](/Res/images/集合框架-Collection-Set-HashSet层次结构图.png)
 - 概述
@@ -1164,7 +1164,7 @@ LinkedHashSet的底层数据是**哈希表**+**双向链表**
     * `removeAll(Collection c)`: 从 LinkedHashSet 中删除包含在指定集合中的所有元素。
     * `retainAll(Collection c)`: 从 LinkedHashSet 中删除所有未包含在指定集合中的元素。
 
-1. **Queue**
+3. **Queue**
 ![](/Res/images/集合框架-Collection-Queue层次结构图.png)
 
 - Java里有一个叫做Stack的类，却没有叫做Queue的类(它是个接口名字)。当需要使用栈时，Java已不推荐使用`Stack`，而是推荐使用更高效的`ArrayDeque`；既然Queue只是一个接口，当需要使用队列时也就首选`ArrayDeque`了(次选是`LinkedList`)。
